@@ -1,0 +1,13 @@
+◇ injected env (2) from .env
+◇ injected env (0) from ..\.env
+◇ injected env (0) from .env
+[Indexes] Could not inspect User: ns does not exist: smart_canteen_loadtest.users
+[Indexes] Could not inspect SystemLog: ns does not exist: smart_canteen_loadtest.systemlogs
+[Indexes] Could not inspect MenuItem: ns does not exist: smart_canteen_loadtest.menuitems
+[Indexes] Could not inspect Order: ns does not exist: smart_canteen_loadtest.orders
+[Indexes] Could not inspect CanteenSetting: ns does not exist: smart_canteen_loadtest.canteensettings
+[Indexes] Could not inspect DailyCounter: ns does not exist: smart_canteen_loadtest.dailycounters
+[Indexes] Could not inspect PickupSlotBooking: ns does not exist: smart_canteen_loadtest.pickupslotbookings
+[Indexes] Could not inspect Notification: ns does not exist: smart_canteen_loadtest.notifications
+[Indexes] Could not inspect Category: ns does not exist: smart_canteen_loadtest.categories
+[Indexes] Could not inspect CanteenAccount: ns does not exist: smart_canteen_loadtest.canteenaccounts

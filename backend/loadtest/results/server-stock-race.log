@@ -1,0 +1,69 @@
+================================================================
+ Smart Canteen Backend Server running on port 5099
+ Mode: development
+ Health check: http://localhost:5099/api/health
+================================================================
+[Cron] Background order monitor started (every 60s).
+[MongoDB Lifecycle] Mongoose connected to DB
+================================================================
+ [MongoDB] Connected Successfully: 127.0.0.1
+ [MongoDB] Database: smart_canteen_loadtest
+================================================================
+[0mGET /api/health [32m200[0m 2.556 ms - 213[0m
+[Seed] Canteen settings and limits initialized.
+[Seed] Created missing default admin account: admin@canteen.com
+[Seed] Created missing default manager account: manager@canteen.com
+[Seed] Created missing default staff account: staff@canteen.com
+[Seed] Created missing default customer account: customer@canteen.com
+[Seed] Initial 16 menu items populated according to specification.
+[Seed] Restaurant menu checked: 28 requested additions available.
+[0mPOST /api/orders [33m400[0m 130.922 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 129.199 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 124.551 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 121.018 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 126.691 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 115.358 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 112.531 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 126.472 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 126.559 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 127.818 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 128.819 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 129.674 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 130.101 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 131.240 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 132.567 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 133.626 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 135.078 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 135.798 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 131.066 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 110.597 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 141.628 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 142.445 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 141.042 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 186.919 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 194.705 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 186.051 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 185.592 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 181.629 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 185.888 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 177.101 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 165.617 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 159.952 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 160.467 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 161.667 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 146.402 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 147.720 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 150.909 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 152.883 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 149.353 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 149.832 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 149.391 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 199.680 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 176.257 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 174.551 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 203.242 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 161.883 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 188.139 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 185.301 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 168.679 ms - 108[0m
+[0mPOST /api/orders [33m400[0m 163.085 ms - 108[0m

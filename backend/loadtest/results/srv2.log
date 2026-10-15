@@ -1,0 +1,18 @@
+================================================================
+ Smart Canteen Backend Server running on port 5099
+ Mode: development
+ Health check: http://localhost:5099/api/health
+================================================================
+[Cron] Background order monitor started (every 60s).
+[MongoDB Lifecycle] Mongoose connected to DB
+================================================================
+ [MongoDB] Connected Successfully: 127.0.0.1
+ [MongoDB] Database: smart_canteen_loadtest
+================================================================
+[0mGET /api/health [32m200[0m 3.114 ms - 213[0m
+[Seed] Created missing default admin account: admin@canteen.com
+[Seed] Created missing default manager account: manager@canteen.com
+[Seed] Created missing default staff account: staff@canteen.com
+[Seed] Created missing default customer account: customer@canteen.com
+[Seed] Restaurant menu checked: 28 requested additions available.
+[0mGET /api/health [32m200[0m 11.071 ms - 213[0m

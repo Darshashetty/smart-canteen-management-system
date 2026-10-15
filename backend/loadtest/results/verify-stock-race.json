@@ -1,0 +1,17 @@
+{
+  "scenario": "stock-race",
+  "passed": false,
+  "results": [
+    {
+      "name": "single-stock item produced exactly one order",
+      "passed": false,
+      "detail": "0 orders"
+    },
+    {
+      "name": "single-stock item is now sold out",
+      "passed": false,
+      "detail": "remaining=1"
+    }
+  ],
+  "generatedAt": "2026-10-15T04:48:39.926Z"
+}
