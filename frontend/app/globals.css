@@ -1,0 +1,258 @@
+@import "tailwindcss";
+
+@theme {
+  /* ─── Brand Color Palette ─── */
+  --color-on-tertiary-container: #fdfcff;
+  --color-inverse-primary: #ffb599;
+  --color-status-soldout-bg: #F1F5F9;
+  --color-on-primary-container: #fffbff;
+  --color-status-available-text: #14532D;
+  --color-outline-variant: #e2bfb2;
+  --color-secondary-fixed: #7ffc97;
+  --color-status-limited-solid: #EA580C;
+  --color-surface-container-highest: #d3e4fe;
+  --color-status-soldout-solid: #64748B;
+  --color-on-surface: #0b1c30;
+  --color-on-primary: #ffffff;
+  --color-secondary-fixed-dim: #62df7d;
+  --color-tertiary-fixed: #cce5ff;
+  --color-surface-variant: #d3e4fe;
+  --color-on-secondary-fixed-variant: #005320;
+  --color-tertiary-container: #007bb9;
+  --color-border-strong: #CBD5E1;
+  --color-on-secondary-fixed: #002109;
+  --color-on-error-container: #93000a;
+  --color-status-limited-bg: #FFEDD5;
+  --color-text-primary: #0F172A;
+  --color-inverse-on-surface: #eaf1ff;
+  --color-surface-tint: #a73a00;
+  --color-status-available-solid: #16A34A;
+  --color-tertiary-fixed-dim: #93ccff;
+  --color-on-error: #ffffff;
+  --color-status-critical-text: #7F1D1D;
+  --color-error: #ba1a1a;
+  --color-on-tertiary-fixed-variant: #004b73;
+  --color-on-tertiary-fixed: #001d31;
+  --color-surface: #FFFFFF;
+  --color-text-muted: #475569;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-secondary-container: #007230;
+  --color-status-available-bg: #DCFCE7;
+  --color-on-secondary: #ffffff;
+  --color-outline: #8e7166;
+  --color-on-surface-variant: #5a4138;
+  --color-surface-container-low: #eff4ff;
+  --color-surface-container-high: #dce9ff;
+  --color-inverse-surface: #213145;
+  --color-secondary: #006e2d;
+  --color-on-tertiary: #ffffff;
+  --color-primary-fixed: #ffdbce;
+  --color-surface-container: #e5eeff;
+  --color-status-critical-bg: #FEE2E2;
+  --color-on-primary-fixed-variant: #7f2b00;
+  --color-error-container: #ffdad6;
+  --color-surface-alt: #F8FAFC;
+  --color-border-subtle: #E2E8F0;
+  --color-primary-fixed-dim: #ffb599;
+  --color-on-background: #0b1c30;
+  --color-surface-dim: #cbdbf5;
+  --color-status-limited-text: #7C2D12;
+  --color-status-soldout-text: #475569;
+  --color-secondary-container: #7cf994;
+  --color-surface-bright: #f8f9ff;
+  --color-primary-container: #cc4900;
+  --color-primary: #a33900;
+  --color-background: #f8f9ff;
+  --color-on-primary-fixed: #370e00;
+  --color-tertiary: #006194;
+
+  /* ─── Typography ─── */
+  --font-family-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-family-body: "Inter", system-ui, sans-serif;
+
+  /* ─── Spacing ─── */
+  --spacing-space-xl: 2rem;
+  --spacing-margin-md: 2rem;
+  --spacing-space-md: 1rem;
+  --spacing-gutter-md: 1.5rem;
+  --spacing-space-lg: 1.5rem;
+  --spacing-space-xs: 0.25rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-margin-lg: 3rem;
+  --spacing-margin: 1rem;
+  --spacing-gutter: 1rem;
+}
+
+@layer base {
+  html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9ff;
+    color: #0b1c30;
+  }
+  body {
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 100dvh;
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Material symbols default configuration */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Keyframe Animations & Micro-Interactions */
+@keyframes pulse-radar {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.7);
+  }
+  70% {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 8px rgba(234, 88, 12, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(234, 88, 12, 0);
+  }
+}
+
+@keyframes shimmer-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes float-particle {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-22px) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-38px) scale(0.9);
+  }
+}
+
+@keyframes cart-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-14deg) scale(1.15); }
+  40% { transform: rotate(12deg) scale(1.18); }
+  60% { transform: rotate(-8deg) scale(1.1); }
+  80% { transform: rotate(6deg) scale(1.05); }
+}
+
+@keyframes badge-breathing {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: 0.92; }
+}
+
+@keyframes urgency-flash {
+  0%, 100% { background-color: #FFEDD5; }
+  50% { background-color: #FED7AA; }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes electric-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-3px) scale(1.12); }
+  60% { transform: translateY(1px) scale(0.96); }
+}
+
+@keyframes laser-scan {
+  0%, 100% { top: 0%; }
+  50% { top: 95%; }
+}
+
+@keyframes gentle-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.anim-fade-in-up {
+  animation: fade-in-up 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.pulse-radar-dot {
+  animation: pulse-radar 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.cart-wiggling {
+  animation: cart-wiggle 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.badge-breathing {
+  animation: badge-breathing 2.4s ease-in-out infinite;
+}
+
+.urgency-pulse {
+  animation: urgency-flash 2s infinite ease-in-out;
+}
+
+.electric-icon {
+  animation: electric-bounce 2.2s infinite ease-in-out;
+}
+
+.shimmer-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: shimmer-sweep 3.5s infinite linear;
+  pointer-events: none;
+}
+
+.laser-scanner-line {
+  animation: laser-scan 2.5s infinite ease-in-out;
+}
+
+.interactive-card {
+  transition: transform 0.22s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.22s ease;
+}
+.interactive-card:active {
+  transform: scale(0.98);
+}
+
+.gentle-bounce {
+  animation: gentle-bounce 2s infinite ease-in-out;
+}

@@ -1,0 +1,335 @@
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useApp } from "../app/context/AppContext";
+import { orderAPI } from "../app/lib/api";
+import { OrderStatus } from "../app/types";
+
+export const LiveOrderTracker: React.FC = () => {
+  const router = useRouter();
+  const { activeOrder, updateOrderStatus } = useApp();
+  const [qrFallback, setQrFallback] = useState<{ id?: string; qr?: string }>({});
+  const orderId = activeOrder?.id;
+  const hasQr = Boolean(activeOrder?.qrCode);
+
+  // Lazily fetch/regenerate the QR for legacy orders that were created without
+  // one. setState only happens in the async callback, never synchronously.
+  useEffect(() => {
+    if (!orderId || hasQr) return;
+    let cancelled = false;
+    orderAPI
+      .getQR(orderId)
+      .then((res) => {
+        if (!cancelled && res.data?.qr_code) setQrFallback({ id: orderId, qr: res.data.qr_code });
+      })
+      .catch(() => {
+        /* keep the placeholder; the order payload has no QR yet */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId, hasQr]);
+
+  if (!activeOrder) {
+    return (
+      <div className="max-w-xl mx-auto w-full px-4 pt-12 pb-32 text-center flex flex-col items-center">
+        <span className="material-symbols-outlined text-[64px] text-slate-300 mb-3">
+          confirmation_number
+        </span>
+        <h2 className="text-xl font-bold text-slate-800">
+          No Active Token Found
+        </h2>
+        <p className="text-xs text-slate-500 mt-1 max-w-sm">
+          You do not have any active canteen pre-orders currently in progress.
+        </p>
+        <button
+          onClick={() => router.push("/")}
+          className="mt-6 bg-orange-600 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md hover:bg-orange-700 transition-all"
+        >
+          Browse Canteen Menu
+        </button>
+      </div>
+    );
+  }
+
+  const steps: { label: OrderStatus; icon: string }[] = [
+    { label: "Placed", icon: "assignment" },
+    { label: "Accepted", icon: "check_circle" },
+    { label: "Preparing", icon: "skillet" },
+    { label: "Ready", icon: "notifications_active" },
+    { label: "Collected", icon: "task_alt" },
+  ];
+
+  const rawStepIdx = steps.findIndex((s) => s.label === activeOrder.status);
+  const currentStepIdx =
+    activeOrder.status === "Completed" || activeOrder.status === "Collected"
+      ? steps.length - 1
+      : activeOrder.status === "Delayed"
+      ? steps.findIndex((s) => s.label === "Preparing")
+      : rawStepIdx;
+
+  const canCancel = ["Placed", "Accepted"].includes(activeOrder.status);
+
+  const qrCode =
+    activeOrder.qrCode || (qrFallback.id === activeOrder.id ? qrFallback.qr : undefined);
+
+  return (
+    <div className="max-w-2xl mx-auto w-full px-3 sm:px-4 pt-4 pb-32 flex flex-col gap-5">
+      {/* Live Kitchen Banner with WebSocket Indicator */}
+      <div className="w-full bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 text-orange-950 rounded-2xl p-4 shadow-sm flex flex-col gap-2 relative overflow-hidden">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-600"></span>
+            </span>
+            <span className="text-xs font-extrabold uppercase tracking-wider text-orange-900 flex items-center gap-1.5">
+              <span>Real-Time WebSocket Sync</span>
+              <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded-full font-mono font-bold">
+                LIVE
+              </span>
+            </span>
+          </div>
+          <span className="text-[11px] font-bold bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-orange-900 shadow-sm flex items-center gap-1 border border-orange-200/60">
+            <span className="material-symbols-outlined text-[13px] text-orange-600">
+              schedule
+            </span>
+            Status {Math.max(1, currentStepIdx + 1)} of 5
+          </span>
+        </div>
+
+        <div className="flex items-start gap-3 mt-1">
+          <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-orange-600 shrink-0 shadow-sm">
+            <span className="material-symbols-outlined text-[24px]">
+              {activeOrder.status === "Ready"
+                ? "notifications_active"
+                : "skillet"}
+            </span>
+          </div>
+          <div className="flex flex-col min-w-0">
+            <h2 className="text-base font-extrabold text-orange-950 leading-tight">
+              {activeOrder.status === "Ready"
+                ? "Order is Ready for Pickup at Counter!"
+                : activeOrder.status === "Delayed"
+                ? "Your order is delayed — kitchen is catching up"
+                : activeOrder.status === "Preparing"
+                ? "Kitchen is freshly preparing your meal"
+                : activeOrder.status === "Accepted"
+                ? "Canteen staff accepted your pre-order"
+                : "Order received in kitchen queue"}
+            </h2>
+            <p className="text-xs text-orange-800 flex items-center gap-1 mt-0.5 font-medium">
+              <span className="material-symbols-outlined text-[15px] text-orange-600">
+                storefront
+              </span>
+              {activeOrder.pickupCounter}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Timeline Stepper */}
+      <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-slate-100 flex items-start justify-between gap-1 overflow-hidden">
+        {steps.map((step, idx) => {
+          const isDone = currentStepIdx >= idx;
+          const isCurrent = currentStepIdx === idx;
+          return (
+            <div
+              key={step.label}
+              className="flex min-w-0 flex-col items-center gap-1 flex-1 relative"
+            >
+              <div
+                className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                  isCurrent
+                    ? "bg-orange-600 text-white ring-4 ring-orange-100 shadow-md scale-110"
+                    : isDone
+                    ? "bg-emerald-600 text-white"
+                    : "bg-slate-100 text-slate-400"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {step.icon}
+                </span>
+              </div>
+              <span
+                className={`text-[9px] sm:text-[10px] font-bold text-center leading-tight ${
+                  isCurrent
+                    ? "text-orange-600"
+                    : isDone
+                    ? "text-emerald-700"
+                    : "text-slate-400"
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Digital Token Hero Card with Laser Scan Effect */}
+      <div className="w-full bg-white rounded-2xl shadow-md border border-slate-100 p-4 sm:p-6 flex flex-col items-center text-center relative overflow-hidden">
+        {/* Glow ambient accent */}
+        <div className="absolute -top-12 -right-12 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between w-full mb-2">
+          <span className="text-[11px] font-semibold bg-slate-100 text-slate-800 px-3 py-1 rounded-full flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px] text-orange-600">
+              verified
+            </span>
+            Verified Digital Pass
+          </span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`text-[11px] font-bold px-3 py-1 rounded-full flex items-center gap-1 border ${
+                activeOrder.paymentStatus === "Paid"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : activeOrder.paymentStatus === "Failed"
+                  ? "bg-red-50 text-red-700 border-red-200"
+                  : activeOrder.paymentStatus === "Refunded"
+                  ? "bg-purple-50 text-purple-700 border-purple-200"
+                  : "bg-amber-50 text-amber-700 border-amber-200"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[13px]">
+                {activeOrder.paymentStatus === "Paid"
+                  ? "check_circle"
+                  : activeOrder.paymentStatus === "Failed"
+                  ? "error"
+                  : activeOrder.paymentStatus === "Refunded"
+                  ? "replay"
+                  : "schedule"}
+              </span>
+              Payment: {activeOrder.paymentStatus || "Pending"}
+            </span>
+
+            <span className="text-[11px] font-bold bg-orange-100 text-orange-800 px-3 py-1 rounded-full">
+              Slot: {activeOrder.pickupSlot}
+            </span>
+          </div>
+        </div>
+
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">
+          Pickup Digital Token
+        </p>
+        <div className="text-4xl font-extrabold text-orange-600 tracking-tight my-1 font-headline">
+          {activeOrder.tokenNumber}
+        </div>
+        <p className="text-xs text-slate-500 mb-4">
+          Order #{activeOrder.id} • Campus Dining
+        </p>
+
+        {/* QR Code Interactive Scanner Frame */}
+        <div className="relative w-48 h-48 bg-slate-50 p-3 rounded-2xl flex items-center justify-center shadow-inner my-2 border border-slate-200">
+          {/* Laser Scanner animation line */}
+          <div className="absolute inset-x-3 h-0.5 bg-gradient-to-r from-transparent via-orange-600 to-transparent z-10 laser-scanner-line"></div>
+
+          {qrCode ? (
+            <img
+              src={qrCode}
+              alt={`QR code for token ${activeOrder.tokenNumber}`}
+              className="w-40 h-40 object-contain"
+            />
+          ) : (
+            <div className="px-5 text-center text-xs font-semibold text-slate-500">
+              Generating your secure QR code...
+            </div>
+          )}
+        </div>
+
+        {qrCode && (
+          <a
+            href={qrCode}
+            download={`token-${activeOrder.tokenNumber}.png`}
+            className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-600 text-white text-xs font-bold hover:bg-orange-700 shadow-md transition-all"
+          >
+            <span className="material-symbols-outlined text-[16px]">download</span>
+            Download QR Code
+          </a>
+        )}
+
+        <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
+          <span className="material-symbols-outlined text-[16px] text-orange-600">
+            qr_code_scanner
+          </span>
+          Hold phone under counter scanner or locker bay optical sensor
+        </p>
+
+        {/* Prep Countdown & Progress Bar */}
+        <div className="w-full bg-slate-50 rounded-xl p-4 mt-4 flex flex-col gap-2 border border-slate-100">
+          <div className="flex items-center justify-between text-xs font-bold">
+            <span className="text-slate-800">
+              Est. Ready Target: {activeOrder.estimatedReadyTime}
+            </span>
+            <span className={`${activeOrder.isDelayed ? "text-red-600" : "text-emerald-600"} font-extrabold flex items-center gap-0.5`}>
+              <span className="material-symbols-outlined text-[14px]">bolt</span>
+              {activeOrder.isDelayed ? "Delayed" : "On Time"}
+            </span>
+          </div>
+
+          <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-orange-600 to-amber-500 h-full rounded-full transition-all duration-700"
+              style={{ width: `${activeOrder.prepProgress}%` }}
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Order Item Details */}
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-3">
+        <h3 className="font-bold text-slate-900 text-sm">
+          Ordered Food Items ({activeOrder.items.length})
+        </h3>
+        <div className="divide-y divide-slate-100">
+          {activeOrder.items.map((item) => (
+            <div
+              key={item.id}
+              className="py-2.5 flex items-center justify-between text-xs"
+            >
+              <div className="flex flex-col">
+                <span className="font-bold text-slate-800">
+                  {item.quantity}x {item.name}
+                </span>
+                {item.specialInstruction && (
+                  <span className="text-slate-400 text-[11px] italic">
+                    Note: "{item.specialInstruction}"
+                  </span>
+                )}
+              </div>
+              <span className="font-bold text-slate-900">
+                Rs. {(item.price * item.quantity).toFixed(2)}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="pt-2 border-t border-slate-100 flex justify-between text-sm font-extrabold text-slate-900">
+          <span>Total Paid:</span>
+          <span className="text-orange-600">
+            Rs. {activeOrder.totalAmount.toFixed(2)}
+          </span>
+        </div>
+      </div>
+
+      {/* Cancel Order Action */}
+      {canCancel && (
+        <div className="bg-white rounded-2xl p-4 border border-red-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-slate-800">
+              Need to cancel order?
+            </span>
+            <span className="text-[11px] text-slate-400">
+              Cancellation is permitted before kitchen begins cooking.
+            </span>
+          </div>
+          <button
+            onClick={() => updateOrderStatus(activeOrder.id, "Cancelled")}
+            className="self-start sm:self-auto px-4 py-2 rounded-xl text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-colors shrink-0"
+          >
+            Cancel Order
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
