@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const CanteenSetting = require('../models/CanteenSetting');
 const { ORDER_STATUS, DEFAULT_SETTINGS } = require('../config/constants');
 const { notifyOrderDelayed, notifyPickupApproaching } = require('./notificationService');
+const { releaseSlotForOrder } = require('./slotService');
 
 let cronTimer = null;
 
@@ -21,6 +22,8 @@ const runBackgroundChecks = async () => {
   try {
     const now = new Date();
     const settings = (await CanteenSetting.findOne()) || DEFAULT_SETTINGS;
+    const { getSocketIOInstance } = require('./notificationService');
+    const io = getSocketIOInstance();
 
     const gracePeriodMinutes = 5; // 5 minutes grace past estimated ready time
     const uncollectedTimeoutMinutes = settings.uncollectedTimeoutMinutes || 60;
@@ -38,6 +41,10 @@ const runBackgroundChecks = async () => {
       order.is_delayed = true;
       await order.save();
       await notifyOrderDelayed(order, 'Kitchen preparation has exceeded initial estimate');
+      if (io) {
+        io.emit('queue_updated');
+        io.emit('order_status_updated', order);
+      }
       console.log(`[Cron] Marked order ${order.token_number} (${order.order_id}) as Delayed.`);
     }
 
@@ -51,6 +58,13 @@ const runBackgroundChecks = async () => {
     for (const order of staleReadyOrders) {
       order.order_status = ORDER_STATUS.NOT_COLLECTED;
       await order.save();
+      // Terminal status: free the pickup-slot capacity exactly once
+      await releaseSlotForOrder(order);
+      if (io) {
+        io.emit('queue_updated');
+        io.emit('order_status_updated', order);
+        io.emit('pickup_slots_updated');
+      }
       console.log(`[Cron] Marked order ${order.token_number} as Not Collected (exceeded ${uncollectedTimeoutMinutes} mins).`);
     }
 

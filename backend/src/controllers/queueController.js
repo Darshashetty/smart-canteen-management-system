@@ -10,6 +10,22 @@ const {
 } = require('../services/notificationService');
 const { ORDER_STATUS, STATUS_TRANSITIONS } = require('../config/constants');
 
+// Terminal statuses that release the order's reserved pickup-slot capacity
+const RELEASABLE = new Set([
+  ORDER_STATUS.COLLECTED,
+  ORDER_STATUS.COMPLETED,
+  ORDER_STATUS.CANCELLED,
+  ORDER_STATUS.REJECTED,
+  ORDER_STATUS.NOT_COLLECTED
+]);
+
+// Resolve an order by its business order_id (ORD-...) or its Mongo ObjectId.
+// validateObjectId() accepts both forms, so the controller must too.
+const findOrderByAnyId = (id) => {
+  if (id && String(id).startsWith('ORD-')) return Order.findOne({ order_id: id });
+  return Order.findById(id);
+};
+
 /**
  * Get live kitchen queue (Criterion A7)
  */
@@ -79,6 +95,8 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     if (io) {
       io.emit('queue_updated');
       io.emit('order_status_updated', updatedOrder);
+      // A 'Not Collected' (or other terminal) transition frees slot capacity
+      if (RELEASABLE.has(status)) io.emit('pickup_slots_updated');
     }
 
     return res.json({
@@ -87,7 +105,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     });
   }
 
-  const order = await Order.findById(orderId);
+  const order = await findOrderByAnyId(orderId);
   if (!order) {
     return res.status(404).json({
       message: 'Order not found',
@@ -158,6 +176,22 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     details: { from: currentStatus, to: status, reason: delay_reason || '' }
   });
 
+  // Real-time sync for student app and staff queues
+  const { getSocketIOInstance } = require('../services/notificationService');
+  const io = getSocketIOInstance();
+
+  // An order never picked up frees its reserved pickup-slot capacity (at most once)
+  if (status === ORDER_STATUS.NOT_COLLECTED) {
+    const { releaseSlotForOrder } = require('../services/slotService');
+    const released = await releaseSlotForOrder(updatedOrder);
+    if (io && released) io.emit('pickup_slots_updated');
+  }
+
+  if (io) {
+    io.emit('queue_updated');
+    io.emit('order_status_updated', updatedOrder);
+  }
+
   return res.json({
     message: `Order ${updatedOrder.token_number} transitioned to '${status}' successfully`,
     data: updatedOrder
@@ -171,7 +205,7 @@ const markOrderDelayed = asyncHandler(async (req, res) => {
   const { reason } = req.body;
   const orderId = req.params.id;
 
-  const order = await Order.findById(orderId);
+  const order = await findOrderByAnyId(orderId);
   if (!order) {
     return res.status(404).json({
       message: 'Order not found',
@@ -213,6 +247,13 @@ const markOrderDelayed = asyncHandler(async (req, res) => {
     token_number: updatedOrder.token_number,
     details: { reason }
   });
+
+  const { getSocketIOInstance } = require('../services/notificationService');
+  const io = getSocketIOInstance();
+  if (io) {
+    io.emit('queue_updated');
+    io.emit('order_status_updated', updatedOrder);
+  }
 
   return res.json({
     message: `Order ${updatedOrder.token_number} marked as Delayed`,

@@ -2,7 +2,71 @@ const Order = require('../models/Order');
 const SystemLog = require('../models/SystemLog');
 const asyncHandler = require('../utils/asyncHandler');
 const { ORDER_STATUS } = require('../config/constants');
-const { releaseSlotAtomic } = require('../services/slotService');
+const { releaseSlotForOrder } = require('../services/slotService');
+
+const NOT_FOUND_MESSAGE =
+  'No order found for the provided token, order ID, or QR code. Check the value and try again.';
+const ALREADY_COLLECTED_MESSAGE = 'Order has already been collected.';
+
+const isCollectedStatus = (status) =>
+  status === ORDER_STATUS.COLLECTED || status === ORDER_STATUS.COMPLETED;
+
+/**
+ * Resolves the intended order from any scanner identifier.
+ *
+ * Root cause this solves: tokens are only unique *per day* (they reset daily
+ * via the DailyCounter), so the same token_number can exist on many dates.
+ * A naive findOne({ token_number }) returns an arbitrary (often the oldest)
+ * document, so staff scanning today's C-001 could be shown yesterday's
+ * Cancelled/Collected order. We therefore:
+ *   1. Prefer the globally-unique order_id (QR payloads embed one).
+ *   2. Fall back to the token and pick the MOST RECENT order with that token,
+ *      so a stale terminal order can never shadow the live one.
+ */
+const resolveDbOrder = async ({ token_number, order_id, qr_payload }) => {
+  let lookupOrderId = order_id;
+  let lookupToken = token_number;
+
+  if (qr_payload) {
+    const parsed = JSON.parse(qr_payload);
+    if (parsed.order_id) lookupOrderId = parsed.order_id;
+    if (parsed.token) lookupToken = parsed.token;
+  }
+
+  if (lookupOrderId) {
+    const id = String(lookupOrderId).trim();
+    if (/^ORD-/i.test(id)) return Order.findOne({ order_id: id });
+    if (require('mongoose').Types.ObjectId.isValid(id)) return Order.findById(id);
+    return Order.findOne({ order_id: id });
+  }
+
+  if (lookupToken) {
+    return Order.findOne({
+      token_number: String(lookupToken).trim().toUpperCase()
+    }).sort({ order_time: -1 });
+  }
+
+  return null;
+};
+
+/**
+ * In-memory equivalent of resolveDbOrder (same precedence + newest-token rule).
+ */
+const resolveInMemoryOrder = ({ token_number, order_id, qr_payload }) => {
+  const InMemoryStore = require('../services/inMemoryStore');
+  let lookupOrderId = order_id;
+  let lookupToken = token_number;
+
+  if (qr_payload) {
+    const parsed = JSON.parse(qr_payload);
+    if (parsed.order_id) lookupOrderId = parsed.order_id;
+    if (parsed.token) lookupToken = parsed.token;
+  }
+
+  if (lookupOrderId) return InMemoryStore.getOrderById(lookupOrderId);
+  if (lookupToken) return InMemoryStore.getOrderByToken(lookupToken);
+  return null;
+};
 
 /**
  * Verify token, QR code, or order number before collection (Criterion A4)
@@ -11,85 +75,31 @@ const { releaseSlotAtomic } = require('../services/slotService');
 const verifyToken = asyncHandler(async (req, res) => {
   const { token_number, order_id, qr_payload } = req.body;
 
-  if (require('mongoose').connection.readyState !== 1) {
-    const InMemoryStore = require('../services/inMemoryStore');
-    let order = null;
-    if (token_number) order = InMemoryStore.getOrderByToken(token_number);
-    else if (order_id) order = InMemoryStore.getOrderById(order_id);
-    else if (qr_payload) {
-      try {
-        const parsed = JSON.parse(qr_payload);
-        if (parsed.token) order = InMemoryStore.getOrderByToken(parsed.token);
-        else if (parsed.order_id) order = InMemoryStore.getOrderById(parsed.order_id);
-      } catch {}
+  let order = null;
+  try {
+    if (require('mongoose').connection.readyState !== 1) {
+      order = resolveInMemoryOrder({ token_number, order_id, qr_payload });
+    } else {
+      order = await resolveDbOrder({ token_number, order_id, qr_payload });
     }
-
-    if (!order) {
-      return res.status(404).json({
-        message: 'No matching order found for verification',
-        details: { token_number, order_id }
-      });
-    }
-
-    if (order.order_status === ORDER_STATUS.COLLECTED || order.order_status === ORDER_STATUS.COMPLETED) {
-      return res.status(409).json({
-        message: 'Order has already been collected.',
-        details: {
-          tokenNumber: order.token_number,
-          orderId: order.order_id,
-          status: order.order_status
-        }
-      });
-    }
-
-    const isReady = order.order_status === ORDER_STATUS.READY;
-    return res.json({
-      message: isReady
-        ? `Token ${order.token_number} verified and ready for collection.`
-        : `Order is currently in '${order.order_status}' status. Not ready for collection yet.`,
-      can_collect: isReady,
-      data: order
+  } catch {
+    return res.status(400).json({
+      message: 'Invalid QR payload format',
+      details: null
     });
   }
 
-  let query = {};
-  if (token_number) {
-    query.token_number = token_number.trim().toUpperCase();
-  } else if (order_id) {
-    query.order_id = order_id.trim();
-  } else if (qr_payload) {
-    try {
-      const parsed = JSON.parse(qr_payload);
-      const qrQueries = [];
-      if (parsed.token) qrQueries.push({ token_number: parsed.token.trim().toUpperCase() });
-      if (parsed.order_id) qrQueries.push({ order_id: parsed.order_id.trim() });
-      if (qrQueries.length === 0) {
-        return res.status(400).json({
-          message: 'QR payload must contain a token or order ID',
-          details: null
-        });
-      }
-      query = qrQueries.length === 1 ? qrQueries[0] : { $or: qrQueries };
-    } catch {
-      return res.status(400).json({
-        message: 'Invalid QR payload format',
-        details: null
-      });
-    }
-  }
-
-  const order = await Order.findOne(query);
   if (!order) {
     return res.status(404).json({
-      message: 'No matching order found for verification',
-      details: query
+      message: NOT_FOUND_MESSAGE,
+      details: { token_number, order_id }
     });
   }
 
   // Criterion A4: Second attempt returns 409 "already collected"
-  if (order.order_status === ORDER_STATUS.COLLECTED || order.order_status === ORDER_STATUS.COMPLETED) {
+  if (isCollectedStatus(order.order_status)) {
     return res.status(409).json({
-      message: 'Order has already been collected.',
+      message: ALREADY_COLLECTED_MESSAGE,
       details: {
         tokenNumber: order.token_number,
         orderId: order.order_id,
@@ -100,7 +110,6 @@ const verifyToken = asyncHandler(async (req, res) => {
   }
 
   const isReady = order.order_status === ORDER_STATUS.READY;
-
   return res.json({
     message: isReady
       ? `Token ${order.token_number} verified and ready for collection.`
@@ -120,10 +129,8 @@ const confirmCollection = asyncHandler(async (req, res) => {
 
   if (require('mongoose').connection.readyState !== 1) {
     const InMemoryStore = require('../services/inMemoryStore');
-    let order = null;
-    if (token_number) order = InMemoryStore.getOrderByToken(token_number);
-    else if (order_id) order = InMemoryStore.getOrderById(order_id);
-    else if (req.params.id) order = InMemoryStore.getOrderById(req.params.id);
+    let order = resolveInMemoryOrder({ token_number, order_id });
+    if (!order && req.params.id) order = InMemoryStore.getOrderById(req.params.id);
 
     if (!order) {
       return res.status(404).json({
@@ -134,7 +141,7 @@ const confirmCollection = asyncHandler(async (req, res) => {
 
     if (order.order_status === ORDER_STATUS.COLLECTED || order.order_status === ORDER_STATUS.COMPLETED) {
       return res.status(409).json({
-        message: 'Order has already been collected.',
+        message: ALREADY_COLLECTED_MESSAGE,
         details: {
           tokenNumber: order.token_number,
           collectedTime: order.collected_time
@@ -155,6 +162,8 @@ const confirmCollection = asyncHandler(async (req, res) => {
     if (io) {
       io.emit('queue_updated');
       io.emit('order_status_updated', updatedOrder);
+      // Completing a collection frees the order's reserved slot capacity
+      io.emit('pickup_slots_updated');
     }
 
     InMemoryStore.addLog({
@@ -164,7 +173,6 @@ const confirmCollection = asyncHandler(async (req, res) => {
       action: 'ORDER_COLLECTION_COMPLETED',
       details: { token: updatedOrder.token_number, order_id: updatedOrder.order_id }
     });
-    await releaseSlotAtomic(updatedOrder.pickup_slot, updatedOrder.order_time);
 
     return res.json({
       message: `Token ${updatedOrder.token_number} collection confirmed. Order is Completed.`,
@@ -172,12 +180,9 @@ const confirmCollection = asyncHandler(async (req, res) => {
     });
   }
 
-  const query = {};
-  if (order_id) query.order_id = order_id.trim();
-  else if (token_number) query.token_number = token_number.trim().toUpperCase();
-  else if (req.params.id) query._id = req.params.id;
+  let order = await resolveDbOrder({ token_number, order_id });
+  if (!order && req.params.id) order = await Order.findById(req.params.id);
 
-  const order = await Order.findOne(query);
   if (!order) {
     return res.status(404).json({
       message: 'Order not found',
@@ -188,7 +193,7 @@ const confirmCollection = asyncHandler(async (req, res) => {
   // Criterion A4: Second collection attempt returns 409 "already collected"
   if (order.order_status === ORDER_STATUS.COLLECTED || order.order_status === ORDER_STATUS.COMPLETED) {
     return res.status(409).json({
-      message: 'Order has already been collected.',
+      message: ALREADY_COLLECTED_MESSAGE,
       details: {
         tokenNumber: order.token_number,
         collectedTime: order.collected_time
@@ -220,7 +225,7 @@ const confirmCollection = asyncHandler(async (req, res) => {
 
   if (!updatedOrder) {
     return res.status(409).json({
-      message: 'Order has already been collected.',
+      message: ALREADY_COLLECTED_MESSAGE,
       details: { tokenNumber: order.token_number }
     });
   }
@@ -234,7 +239,18 @@ const confirmCollection = asyncHandler(async (req, res) => {
     token_number: updatedOrder.token_number,
     details: { collectedAt: now }
   });
-  await releaseSlotAtomic(updatedOrder.pickup_slot, updatedOrder.order_time);
+
+  // Release reserved pickup-slot capacity exactly once for this order
+  const released = await releaseSlotForOrder(updatedOrder);
+
+  // Real-time sync for student app, staff queues and slot availability
+  const { getSocketIOInstance } = require('../services/notificationService');
+  const io = getSocketIOInstance();
+  if (io) {
+    io.emit('queue_updated');
+    io.emit('order_status_updated', updatedOrder);
+    if (released) io.emit('pickup_slots_updated');
+  }
 
   return res.json({
     message: `Token ${updatedOrder.token_number} collection confirmed. Order is Completed.`,
@@ -247,7 +263,41 @@ const confirmCollection = asyncHandler(async (req, res) => {
  */
 const markNotCollected = asyncHandler(async (req, res) => {
   const orderId = req.params.id;
-  const order = await Order.findById(orderId);
+
+  if (require('mongoose').connection.readyState !== 1) {
+    const InMemoryStore = require('../services/inMemoryStore');
+    const order = InMemoryStore.getOrderById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found', details: { orderId } });
+    }
+    if (order.order_status !== ORDER_STATUS.READY) {
+      return res.status(409).json({
+        message: `Invalid transition: Only 'Ready' orders can be marked as 'Not Collected'. Current status is '${order.order_status}'.`,
+        details: { currentStatus: order.order_status }
+      });
+    }
+    const updatedOrder = InMemoryStore.updateOrderStatus(order._id, ORDER_STATUS.NOT_COLLECTED);
+    InMemoryStore.addLog({
+      userId: req.user._id,
+      userName: req.user.name,
+      role: req.user.role,
+      action: 'ORDER_MARKED_NOT_COLLECTED',
+      details: { order_id: updatedOrder.order_id, token: updatedOrder.token_number }
+    });
+    const { getSocketIOInstance } = require('../services/notificationService');
+    const io = getSocketIOInstance();
+    if (io) {
+      io.emit('queue_updated');
+      io.emit('order_status_updated', updatedOrder);
+      io.emit('pickup_slots_updated');
+    }
+    return res.json({
+      message: `Order ${updatedOrder.token_number} marked as Not Collected`,
+      data: updatedOrder
+    });
+  }
+
+  const order = await resolveDbOrder({ order_id: orderId });
 
   if (!order) {
     return res.status(404).json({
@@ -285,6 +335,17 @@ const markNotCollected = asyncHandler(async (req, res) => {
     token_number: updatedOrder.token_number,
     details: { reason: req.body.reason || 'Unclaimed after collection window' }
   });
+
+  // Uncollected food frees the reserved pickup-slot capacity (released at most once)
+  const released = await releaseSlotForOrder(updatedOrder);
+
+  const { getSocketIOInstance } = require('../services/notificationService');
+  const io = getSocketIOInstance();
+  if (io) {
+    io.emit('queue_updated');
+    io.emit('order_status_updated', updatedOrder);
+    if (released) io.emit('pickup_slots_updated');
+  }
 
   return res.json({
     message: `Order ${updatedOrder.token_number} marked as Not Collected`,

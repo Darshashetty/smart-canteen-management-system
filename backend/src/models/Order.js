@@ -82,6 +82,12 @@ const orderSchema = new mongoose.Schema(
     pickup_slot: {
       type: String // e.g. "13:00-13:15"
     },
+    slot_released: {
+      // True once this order's reserved pickup-slot capacity has been released.
+      // Guarantees a slot is released at most once per order (collection, cancel, not-collected).
+      type: Boolean,
+      default: false
+    },
     estimated_ready_time: {
       type: Date
     },

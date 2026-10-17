@@ -1,13 +1,6 @@
 ﻿module.exports = {
   testEnvironment: 'node',
-  testMatch: ['**/tests/**/*.test.js'],
-  collectCoverageFrom: [
-    'src/**/*.js',
-    '!src/server.js',
-    '!src/seed/**',
-    '!src/config/db.js',
-    '!src/utils/reconcileIndexes.js'
-  ],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html']
+  // The full suite loads bcrypt/qrcode/mongoose; 5s is too tight for the first
+  // test in a worker and caused intermittent false timeouts.
+  testTimeout: 15000
 };

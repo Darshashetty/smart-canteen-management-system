@@ -119,6 +119,13 @@ const verifyTokenSchema = z.object({
   message: 'Must provide token_number, order_id, or qr_payload'
 });
 
+const confirmCollectionSchema = z.object({
+  token_number: z.string().trim().optional(),
+  order_id: z.string().trim().optional()
+}).refine((data) => data.token_number || data.order_id, {
+  message: 'Must provide token_number or order_id'
+});
+
 const menuItemSchema = z.object({
   item_name: z.string().trim().min(1, 'Item name is required'),
   category: z.string().trim().min(1, 'Category is required'),
@@ -205,6 +212,7 @@ module.exports = {
   updatePaymentStatusSchema,
   updatePickupTimeSchema,
   verifyTokenSchema,
+  confirmCollectionSchema,
   menuItemSchema,
   updateStockAvailabilitySchema,
   canteenSettingsSchema,

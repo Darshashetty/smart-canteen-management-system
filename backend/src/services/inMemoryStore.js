@@ -263,6 +263,20 @@ let memoryLogs = [
 let tokenCounter = 23;
 let memorySettings = { ...DEFAULT_SETTINGS };
 
+// Pickup-slot capacity ledger: in-memory parity with the PickupSlotBooking
+// collection so the no-database fallback still reserves/releases capacity
+// correctly (key: `${YYYY-MM-DD}|${slot}` -> booked_count).
+const memorySlotBookings = {};
+const slotLedgerKey = (dateStr, slot) => `${dateStr}|${slot}`;
+
+const RELEASABLE_STATUSES = [
+  ORDER_STATUS.COLLECTED,
+  ORDER_STATUS.COMPLETED,
+  ORDER_STATUS.CANCELLED,
+  ORDER_STATUS.REJECTED,
+  ORDER_STATUS.NOT_COLLECTED
+];
+
 // Synchronously generate initial QR codes for seed orders
 (async () => {
   for (const ord of memoryOrders) {
@@ -346,7 +360,19 @@ const InMemoryStore = {
     return memoryOrders.find((o) => o._id === String(id) || o.order_id === String(id));
   },
   getOrderByToken: (token) => {
-    return memoryOrders.find((o) => o.token_number.toUpperCase() === token.trim().toUpperCase());
+    const norm = String(token).trim().toUpperCase();
+    const matches = memoryOrders.filter((o) => o.token_number.toUpperCase() === norm);
+    if (matches.length === 0) return undefined;
+    // Tokens reset daily, so return the most recent match (mirrors the DB path)
+    return matches
+      .slice()
+      .sort((a, b) => new Date(b.order_time) - new Date(a.order_time))[0];
+  },
+  // Test seam: inject an order to simulate cross-day token reuse (same token,
+  // older order_time). Not used by application code.
+  __seedOrder: (order) => {
+    memoryOrders.unshift(order);
+    return order;
   },
   createOrder: async ({ customerId, customerName, items, pickupSlot, pickupTime, idempotencyKey, paymentMethod }) => {
     // Criterion A2: idempotency parity with the DB path
@@ -370,6 +396,18 @@ const InMemoryStore = {
         err.details = { itemId: it.item_id, requested: requestedQty, available: menu.available_quantity };
         throw err;
       }
+    }
+
+    // Criterion A1: fail fast if the pickup slot is already at capacity
+    const orderDateStr = new Date().toISOString().slice(0, 10);
+    if (pickupSlot && !InMemoryStore.isSlotAvailable(pickupSlot, orderDateStr)) {
+      const max = memorySettings.max_orders_per_slot || 20;
+      const err = new Error(
+        `Pickup slot '${pickupSlot}' is completely full (capacity ${max}). Please select another slot.`
+      );
+      err.statusCode = 409;
+      err.details = { slot: pickupSlot };
+      throw err;
     }
 
     tokenCounter += 1;
@@ -425,6 +463,9 @@ const InMemoryStore = {
     };
 
     memoryOrders.unshift(newOrder);
+
+    // Reserve the slot capacity only after the order is successfully created
+    if (pickupSlot) InMemoryStore.reserveSlot(pickupSlot, orderDateStr);
     return newOrder;
   },
 
@@ -442,6 +483,13 @@ const InMemoryStore = {
     }
     if (newStatus === ORDER_STATUS.COLLECTED || newStatus === ORDER_STATUS.COMPLETED) {
       order.collected_time = new Date();
+    }
+    // Release reserved pickup-slot capacity exactly once when the order reaches
+    // a terminal state (collected, completed, cancelled, rejected, not collected)
+    if (RELEASABLE_STATUSES.includes(newStatus) && order.pickup_slot && !order.slot_released) {
+      const dateStr = new Date(order.order_time || Date.now()).toISOString().slice(0, 10);
+      InMemoryStore.releaseSlot(order.pickup_slot, dateStr);
+      order.slot_released = true;
     }
     order.history.push({ from: oldStatus, to: newStatus, timestamp: new Date(), reason });
     return order;
@@ -468,6 +516,43 @@ const InMemoryStore = {
   updateSettings: (newSettings) => {
     memorySettings = { ...memorySettings, ...newSettings };
     return memorySettings;
+  },
+
+  // Pickup slot capacity (in-memory parity with the PickupSlotBooking collection)
+  getSlotBooked: (dateStr, slot) => memorySlotBookings[slotLedgerKey(dateStr, slot)] || 0,
+  getSlotBookingMap: (dateStr) => {
+    const map = {};
+    const prefix = `${dateStr}|`;
+    for (const [key, value] of Object.entries(memorySlotBookings)) {
+      if (key.startsWith(prefix)) map[key.slice(prefix.length)] = value;
+    }
+    return map;
+  },
+  isSlotAvailable: (slot, dateStr) => {
+    const max = memorySettings.max_orders_per_slot || 20;
+    return (memorySlotBookings[slotLedgerKey(dateStr, slot)] || 0) < max;
+  },
+  reserveSlot: (slot, dateStr) => {
+    if (!slot) return { success: true, booked: 0 };
+    const max = memorySettings.max_orders_per_slot || 20;
+    const key = slotLedgerKey(dateStr, slot);
+    const current = memorySlotBookings[key] || 0;
+    if (current >= max) {
+      return {
+        success: false,
+        message: `Pickup slot '${slot}' is completely full (capacity ${max}). Please select another slot.`
+      };
+    }
+    memorySlotBookings[key] = current + 1;
+    return { success: true, booked: current + 1 };
+  },
+  releaseSlot: (slot, dateStr) => {
+    if (!slot) return false;
+    const key = slotLedgerKey(dateStr, slot);
+    const current = memorySlotBookings[key] || 0;
+    if (current <= 0) return false;
+    memorySlotBookings[key] = current - 1;
+    return true;
   },
 
   // Categories CRUD (Phase 5)

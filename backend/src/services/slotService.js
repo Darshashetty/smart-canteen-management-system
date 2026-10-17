@@ -27,6 +27,13 @@ const getAvailablePickupSlots = async (targetDate = new Date()) => {
         bookingMap[b.slot] = b.booked_count;
       });
     } catch {}
+  } else {
+    // No-database fallback: read settings + booked counts from the in-memory store
+    try {
+      const InMemoryStore = require('./inMemoryStore');
+      settings = InMemoryStore.getSettings() || settings;
+      Object.assign(bookingMap, InMemoryStore.getSlotBookingMap(todayStr));
+    } catch {}
   }
 
   const slotInterval = settings.slot_interval_minutes || 15;
@@ -121,6 +128,33 @@ const releaseSlotAtomic = async (pickupSlot, orderTime = new Date()) => {
   );
 };
 
+/**
+ * Releases the pickup-slot capacity held by a specific order, at most once.
+ * Uses the order's slot_released flag with an atomic conditional update so
+ * duplicate releases (double collection, cancel + not-collected races, retries)
+ * can never decrement capacity twice.
+ * Returns true only when this call performed the release.
+ */
+const releaseSlotForOrder = async (order) => {
+  if (!order || !order.pickup_slot || mongoose.connection.readyState !== 1) return false;
+
+  const Order = require('../models/Order');
+  const flipped = await Order.findOneAndUpdate(
+    { _id: order._id, slot_released: { $ne: true } },
+    { $set: { slot_released: true } },
+    { new: true }
+  );
+
+  if (!flipped) return false; // already released previously
+
+  const dateStr = new Date(flipped.order_time || new Date()).toISOString().slice(0, 10);
+  await PickupSlotBooking.findOneAndUpdate(
+    { date: dateStr, slot: flipped.pickup_slot, booked_count: { $gt: 0 } },
+    { $inc: { booked_count: -1 } }
+  );
+  return true;
+};
+
 const clearSlotIfEmpty = async (pickupSlot, targetDate = new Date()) => {
   if (!pickupSlot) {
     return { success: false, status: 400, message: 'Pickup slot is required.' };
@@ -173,5 +207,6 @@ module.exports = {
   getAvailablePickupSlots,
   reserveSlotAtomic,
   releaseSlotAtomic,
+  releaseSlotForOrder,
   clearSlotIfEmpty
 };

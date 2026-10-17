@@ -9,7 +9,8 @@ const {
   clearPickupSlot,
   reorderPastOrder,
   updatePaymentStatus,
-  updateOrderPickupTime
+  updateOrderPickupTime,
+  getOrderQR
 } = require('../controllers/orderController');
 const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/rbac');
@@ -55,6 +56,14 @@ router.get(
   authenticate,
   validateObjectId('id'),
   getOrderById
+);
+
+// Get (or lazily regenerate) the order QR code for the owning student or staff
+router.get(
+  '/:id/qr',
+  authenticate,
+  validateObjectId('id'),
+  getOrderQR
 );
 
 // Cancel order before preparation starts

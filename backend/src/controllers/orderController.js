@@ -9,6 +9,7 @@ const { calculateOrderETA } = require('../services/queueService');
 const {
   reserveSlotAtomic,
   releaseSlotAtomic,
+  releaseSlotForOrder,
   getAvailablePickupSlots,
   clearSlotIfEmpty
 } = require('../services/slotService');
@@ -90,6 +91,7 @@ const createPreOrder = asyncHandler(async (req, res) => {
     if (io) {
       io.to('kitchen_staff').emit('order_created', newOrder);
       io.emit('queue_updated');
+      if (pickup_slot) io.emit('pickup_slots_updated');
     }
     return res.status(201).json({
       message: 'Pre-order placed successfully',
@@ -277,6 +279,15 @@ const createPreOrder = asyncHandler(async (req, res) => {
       details: { total: order.total_amount, itemsCount: validatedItems.length }
     });
 
+    // Real-time sync (parity with in-memory path): staff queue + slot availability
+    const { getSocketIOInstance } = require('../services/notificationService');
+    const io = getSocketIOInstance();
+    if (io) {
+      io.to('kitchen_staff').emit('order_created', order);
+      io.emit('queue_updated');
+      if (slotReserved && pickup_slot) io.emit('pickup_slots_updated');
+    }
+
     return res.status(201).json({
       message: 'Pre-order placed successfully',
       duplicate: false,
@@ -446,6 +457,28 @@ const cancelOrder = asyncHandler(async (req, res) => {
       });
     }
     const updated = InMemoryStore.updateOrderStatus(orderId, ORDER_STATUS.CANCELLED, reason || 'Cancelled by customer');
+    updated.cancellation_reason = reason || 'Cancelled by customer';
+
+    // Parity with DB path: restore stock, notify, log and broadcast
+    for (const item of order.items) {
+      InMemoryStore.updateMenuItemStock(item.item_id, Number(item.quantity) || 0);
+    }
+    await notifyOrderCancelled(updated, updated.cancellation_reason);
+    InMemoryStore.addLog({
+      userId: req.user._id,
+      userName: req.user.name,
+      role: req.user.role,
+      action: 'ORDER_CANCELLED',
+      details: { order_id: updated.order_id, token: updated.token_number, reason: updated.cancellation_reason }
+    });
+    const { getSocketIOInstance } = require('../services/notificationService');
+    const io = getSocketIOInstance();
+    if (io) {
+      io.emit('queue_updated');
+      io.emit('order_status_updated', updated);
+      // Cancelling frees the order's reserved slot capacity
+      io.emit('pickup_slots_updated');
+    }
     return res.json({
       message: 'Order successfully cancelled and stock restored',
       data: updated
@@ -502,9 +535,8 @@ const cancelOrder = asyncHandler(async (req, res) => {
     });
   }
 
-  if (order.pickup_slot) {
-    await releaseSlotAtomic(order.pickup_slot, order.order_time);
-  }
+  // Release reserved slot capacity exactly once for this order
+  const released = await releaseSlotForOrder(updatedOrder);
 
   await notifyOrderCancelled(updatedOrder, updatedOrder.cancellation_reason);
 
@@ -518,6 +550,15 @@ const cancelOrder = asyncHandler(async (req, res) => {
     details: { reason: updatedOrder.cancellation_reason }
   });
 
+  // Real-time sync for staff queues and slot availability
+  const { getSocketIOInstance } = require('../services/notificationService');
+  const io = getSocketIOInstance();
+  if (io) {
+    io.emit('queue_updated');
+    io.emit('order_status_updated', updatedOrder);
+    if (released) io.emit('pickup_slots_updated');
+  }
+
   return res.json({
     message: 'Order successfully cancelled and stock restored',
     data: updatedOrder
@@ -528,23 +569,8 @@ const cancelOrder = asyncHandler(async (req, res) => {
  * Get available 15-minute pickup slots
  */
 const getPickupSlots = asyncHandler(async (req, res) => {
-  if (require('mongoose').connection.readyState !== 1) {
-    return res.json({
-      message: 'Available pickup slots retrieved',
-      data: [
-        { slot: '12:00-12:15', booked: 0, remaining: 10, capacity: 10, status: 'Available' },
-        { slot: '12:15-12:30', booked: 2, remaining: 8, capacity: 10, status: 'Available' },
-        { slot: '12:30-12:45', booked: 3, remaining: 7, capacity: 10, status: 'Available' },
-        { slot: '12:45-13:00', booked: 5, remaining: 5, capacity: 10, status: 'Available' },
-        { slot: '13:00-13:15', booked: 6, remaining: 4, capacity: 10, status: 'Available' },
-        { slot: '13:15-13:30', booked: 1, remaining: 9, capacity: 10, status: 'Available' },
-        { slot: '13:30-13:45', booked: 0, remaining: 10, capacity: 10, status: 'Available' },
-        { slot: '13:45-14:00', booked: 0, remaining: 10, capacity: 10, status: 'Available' }
-      ]
-    });
-
-  }
-
+  // Works against MongoDB or the in-memory fallback (both backed by real
+  // reservation counts), so booked/remaining always reflect live capacity.
   const slots = await getAvailablePickupSlots();
   return res.json({
     message: 'Available pickup slots retrieved',
@@ -849,8 +875,39 @@ const updateOrderPickupTime = asyncHandler(async (req, res) => {
 
     if (isOrderAccessDenied(req, res, order)) return;
 
+    if (
+      [ORDER_STATUS.COLLECTED, ORDER_STATUS.COMPLETED, ORDER_STATUS.CANCELLED,
+       ORDER_STATUS.REJECTED, ORDER_STATUS.NOT_COLLECTED].includes(order.order_status)
+    ) {
+      return res.status(409).json({
+        message: `Cannot change pickup time for an order in '${order.order_status}' status.`,
+        details: { currentStatus: order.order_status }
+      });
+    }
+
+    const oldSlot = order.pickup_slot || '';
+    const slotChanged = Boolean(pickup_slot && pickup_slot !== oldSlot);
+
+    // Reserve the new slot first so a full slot can never corrupt the order
+    if (slotChanged) {
+      const dateStr = new Date(order.order_time || Date.now()).toISOString().slice(0, 10);
+      if (!InMemoryStore.isSlotAvailable(pickup_slot, dateStr)) {
+        const max = InMemoryStore.getSettings().max_orders_per_slot || 20;
+        return res.status(409).json({
+          message: `Pickup slot '${pickup_slot}' is completely full (capacity ${max}). Please select another slot.`,
+          details: { slot: pickup_slot }
+        });
+      }
+      InMemoryStore.reserveSlot(pickup_slot, dateStr);
+    }
+
     if (pickup_time) order.pickup_time = new Date(pickup_time);
-    if (pickup_slot) order.pickup_slot = pickup_slot;
+    if (slotChanged) {
+      order.pickup_slot = pickup_slot;
+      order.slot_released = false; // holds a fresh reservation for the new slot
+      const dateStr = new Date(order.order_time || Date.now()).toISOString().slice(0, 10);
+      if (oldSlot) InMemoryStore.releaseSlot(oldSlot, dateStr);
+    }
 
     const { notifyPickupTimeChanged } = require('../services/notificationService');
     await notifyPickupTimeChanged(order, order.pickup_time, order.pickup_slot);
@@ -862,6 +919,12 @@ const updateOrderPickupTime = asyncHandler(async (req, res) => {
       action: 'PICKUP_TIME_CHANGED',
       details: { order_id: order.order_id, pickup_time: order.pickup_time, pickup_slot: order.pickup_slot }
     });
+
+    if (slotChanged) {
+      const { getSocketIOInstance } = require('../services/notificationService');
+      const io = getSocketIOInstance();
+      if (io) io.emit('pickup_slots_updated');
+    }
 
     return res.json({
       message: 'Scheduled pickup time updated and customer alerted',
@@ -885,9 +948,41 @@ const updateOrderPickupTime = asyncHandler(async (req, res) => {
 
   if (isOrderAccessDenied(req, res, order)) return;
 
+  if (
+    [ORDER_STATUS.COLLECTED, ORDER_STATUS.COMPLETED, ORDER_STATUS.CANCELLED,
+     ORDER_STATUS.REJECTED, ORDER_STATUS.NOT_COLLECTED].includes(order.order_status)
+  ) {
+    return res.status(409).json({
+      message: `Cannot change pickup time for an order in '${order.order_status}' status.`,
+      details: { currentStatus: order.order_status }
+    });
+  }
+
+  const oldSlot = order.pickup_slot || '';
+  const slotChanged = Boolean(pickup_slot && pickup_slot !== oldSlot);
+
+  // Reserve the new slot first so a full slot can never corrupt the order
+  if (slotChanged) {
+    const reserveResult = await reserveSlotAtomic(pickup_slot, new Date());
+    if (!reserveResult.success) {
+      return res.status(409).json({
+        message: reserveResult.message,
+        details: { slot: pickup_slot }
+      });
+    }
+  }
+
   if (pickup_time) order.pickup_time = new Date(pickup_time);
-  if (pickup_slot) order.pickup_slot = pickup_slot;
+  if (slotChanged) {
+    order.pickup_slot = pickup_slot;
+    order.slot_released = false; // order now holds a fresh reservation for the new slot
+  }
   await order.save();
+
+  // Free the old slot's capacity after the new reservation succeeded
+  if (slotChanged && oldSlot) {
+    await releaseSlotAtomic(oldSlot, order.order_time);
+  }
 
   const { notifyPickupTimeChanged } = require('../services/notificationService');
   await notifyPickupTimeChanged(order, order.pickup_time, order.pickup_slot);
@@ -902,9 +997,77 @@ const updateOrderPickupTime = asyncHandler(async (req, res) => {
     details: { pickup_time: order.pickup_time, pickup_slot: order.pickup_slot }
   });
 
+  if (slotChanged) {
+    const { getSocketIOInstance } = require('../services/notificationService');
+    const io = getSocketIOInstance();
+    if (io) io.emit('pickup_slots_updated');
+  }
+
   return res.json({
     message: 'Scheduled pickup time updated and customer alerted',
     data: order
+  });
+});
+
+/**
+ * Get (or lazily regenerate) the QR code for an order.
+ * GET /api/orders/:id/qr
+ * Owner students can view/download their own QR; staff/manager/admin can access any order.
+ */
+const getOrderQR = asyncHandler(async (req, res) => {
+  const identifier = req.params.id;
+
+  if (require('mongoose').connection.readyState !== 1) {
+    const InMemoryStore = require('../services/inMemoryStore');
+    const order = InMemoryStore.getOrderById(identifier) || InMemoryStore.getOrderByToken(identifier);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found', details: { identifier } });
+    }
+    if (isOrderAccessDenied(req, res, order)) return;
+
+    if (!order.qr_code) {
+      order.qr_code = await generateQRCodeDataURL(order.token_number, order.order_id);
+    }
+
+    return res.json({
+      message: 'QR code retrieved',
+      data: {
+        qr_code: order.qr_code,
+        token_number: order.token_number,
+        order_id: order.order_id
+      }
+    });
+  }
+
+  let order = null;
+  if (identifier.startsWith('ORD-')) {
+    order = await Order.findOne({ order_id: identifier });
+  } else {
+    order = await Order.findById(identifier);
+  }
+
+  if (!order) {
+    return res.status(404).json({ message: 'Order not found', details: { identifier } });
+  }
+
+  if (isOrderAccessDenied(req, res, order)) return;
+
+  // Regenerate QR for legacy orders that were created without one
+  if (!order.qr_code) {
+    const qrCode = await generateQRCodeDataURL(order.token_number, order.order_id);
+    if (qrCode) {
+      order.qr_code = qrCode;
+      await Order.updateOne({ _id: order._id }, { $set: { qr_code: qrCode } });
+    }
+  }
+
+  return res.json({
+    message: 'QR code retrieved',
+    data: {
+      qr_code: order.qr_code,
+      token_number: order.token_number,
+      order_id: order.order_id
+    }
   });
 });
 
@@ -917,5 +1080,6 @@ module.exports = {
   clearPickupSlot,
   reorderPastOrder,
   updatePaymentStatus,
-  updateOrderPickupTime
+  updateOrderPickupTime,
+  getOrderQR
 };

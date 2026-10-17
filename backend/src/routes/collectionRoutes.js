@@ -8,7 +8,7 @@ const {
 const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/rbac');
 const { ROLES } = require('../config/constants');
-const { validate, validateObjectId, verifyTokenSchema } = require('../middleware/validate');
+const { validate, validateObjectId, verifyTokenSchema, confirmCollectionSchema } = require('../middleware/validate');
 
 // Staff: Verify token / QR code (A4 & A5)
 router.post(
@@ -24,6 +24,7 @@ router.post(
   '/confirm',
   authenticate,
   authorize(ROLES.STAFF, ROLES.MANAGER, ROLES.ADMIN),
+  validate(confirmCollectionSchema),
   confirmCollection
 );
 
