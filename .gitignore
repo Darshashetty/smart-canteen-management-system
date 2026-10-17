@@ -13,7 +13,7 @@ node_modules/
 /coverage
 
 # next.js
-/.next/
+.next/
 /out/
 /build
 
@@ -32,8 +32,7 @@ yarn-error.log*
 .env.production
 backend/.env
 
-# excluded frontend/agents
-frontend/
+# excluded agent config
 .agents/
 
 # vercel & typescript
