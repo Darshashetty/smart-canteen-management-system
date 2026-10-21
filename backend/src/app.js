@@ -18,18 +18,7 @@ const app = express();
 
 const path = require('path');
 
-const defaultAllowedOrigins = [
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'https://smartcanteern.vercel.app'
-];
-
-const configuredOrigins = (process.env.CLIENT_ORIGIN || '')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
-const allowedOrigins = [...new Set([...configuredOrigins, ...defaultAllowedOrigins])];
+const { isOriginAllowed } = require('./utils/corsOrigin');
 
 // Security and utility middlewares
 app.use(helmet({
@@ -38,10 +27,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: (origin, callback) => {
-    const isAllowed = !origin || allowedOrigins.includes(origin);
-    callback(null, isAllowed);
-  },
+  origin: (origin, callback) => callback(null, isOriginAllowed(origin)),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

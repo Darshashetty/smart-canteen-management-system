@@ -30,25 +30,11 @@ const startServer = async () => {
   const server = http.createServer(app);
 
   // Initialize Socket.io for real-time live kitchen queue updates and notifications (Page 4 & 7)
-  const defaultAllowedOrigins = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'https://smartcanteern.vercel.app'
-  ];
-
-  const configuredOrigins = (process.env.CLIENT_ORIGIN || '')
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-
-  const socketAllowedOrigins = [...new Set([...configuredOrigins, ...defaultAllowedOrigins])];
+  const { isOriginAllowed } = require('./utils/corsOrigin');
 
   const io = new Server(server, {
     cors: {
-      origin: (origin, callback) => {
-        const isAllowed = !origin || socketAllowedOrigins.includes(origin);
-        callback(null, isAllowed);
-      },
+      origin: (origin, callback) => callback(null, isOriginAllowed(origin)),
       methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
       credentials: true
     }

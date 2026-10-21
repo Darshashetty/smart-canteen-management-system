@@ -1,9 +1,16 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../app/context/AppContext";
 import { OrderStatus } from "../app/types";
 import { collectionAPI, orderAPI } from "../app/lib/api";
+
+type ScannerStatus = "idle" | "starting" | "scanning" | "error";
+
+const getBarcodeDetector = (): any => {
+  if (typeof window === "undefined") return null;
+  return (window as any).BarcodeDetector || null;
+};
 
 export const KitchenDashboard: React.FC = () => {
   const {
@@ -20,6 +27,10 @@ export const KitchenDashboard: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<string>("Active");
   const [isScannerModalOpen, setIsScannerModalOpen] = useState(false);
   const [isScanningSimulated, setIsScanningSimulated] = useState(false);
+  const [scannerStatus, setScannerStatus] = useState<ScannerStatus>("idle");
+  const [scannerError, setScannerError] = useState<string>("");
+  const [cameraDevices, setCameraDevices] = useState<MediaDeviceInfo[]>([]);
+  const [activeCameraId, setActiveCameraId] = useState<string>("");
   const [verificationResult, setVerificationResult] = useState<{
     success: boolean;
     message: string;
@@ -29,6 +40,28 @@ export const KitchenDashboard: React.FC = () => {
     confirmation: { token_number?: string; order_id?: string };
     order: any;
   } | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const detectorRef = useRef<any>(null);
+  const scanRafRef = useRef<number | null>(null);
+  const lastDecodedRef = useRef<string>("");
+  const lastDecodedAtRef = useRef<number>(0);
+
+  const stopCamera = useCallback(() => {
+    if (scanRafRef.current !== null) {
+      cancelAnimationFrame(scanRafRef.current);
+      scanRafRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    detectorRef.current = null;
+  }, []);
 
   // Sourced from shared context state so socket `pickup_slots_updated` events
   // refresh capacity in real time without a manual reload.
@@ -107,12 +140,16 @@ export const KitchenDashboard: React.FC = () => {
       const verification = await collectionAPI.verify(lookup);
       if (!verification.can_collect) {
         const message = verification.message || "Order is not ready for collection.";
+        stopCamera();
+        setScannerStatus("idle");
         setPendingCollection(null);
         setVerificationResult({ success: false, message, order: verification.data });
         showToast(`⚠️ ${message}`);
         return;
       }
 
+      stopCamera();
+      setScannerStatus("idle");
       setPendingCollection({
         confirmation: { order_id: verification.data.order_id },
         order: verification.data
@@ -126,6 +163,8 @@ export const KitchenDashboard: React.FC = () => {
     } catch (err: any) {
       const message =
         err?.message || "Could not verify this order. Check the token or QR code and try again.";
+      stopCamera();
+      setScannerStatus("idle");
       setPendingCollection(null);
       setVerificationResult({ success: false, message });
       showToast(`⚠️ ${message}`);
@@ -158,7 +197,130 @@ export const KitchenDashboard: React.FC = () => {
     performVerification(scanTokenInput);
   };
 
+  const scanLoop = useCallback(() => {
+    const video = videoRef.current;
+    const detector = detectorRef.current;
+    if (!video || !detector || video.readyState < 2) {
+      scanRafRef.current = requestAnimationFrame(scanLoop);
+      return;
+    }
+
+    detector
+      .detect(video)
+      .then((codes: any[]) => {
+        if (!codes || codes.length === 0) return;
+        const rawValue = String(codes[0]?.rawValue || "").trim();
+        if (!rawValue) return;
+
+        const now = Date.now();
+        // Debounce: ignore identical reads within 3s to avoid duplicate submits
+        // while the QR stays in frame during verification.
+        if (rawValue === lastDecodedRef.current && now - lastDecodedAtRef.current < 3000) {
+          return;
+        }
+        lastDecodedRef.current = rawValue;
+        lastDecodedAtRef.current = now;
+
+        performVerification(rawValue);
+      })
+      .catch(() => {
+        // Transient decode failures are expected between frames; keep scanning.
+      })
+      .finally(() => {
+        scanRafRef.current = requestAnimationFrame(scanLoop);
+      });
+  }, []);
+
+  const startCamera = useCallback(
+    async (deviceId?: string) => {
+      const Detector = getBarcodeDetector();
+      if (!Detector) {
+        setScannerStatus("error");
+        setScannerError(
+          "This browser has no built-in QR decoder. Use Chrome/Edge on Android or desktop, or type the token below."
+        );
+        return;
+      }
+      if (
+        typeof navigator === "undefined" ||
+        !navigator.mediaDevices?.getUserMedia
+      ) {
+        setScannerStatus("error");
+        setScannerError(
+          "Camera access needs a secure (https) page. Open the app over https or use manual entry below."
+        );
+        return;
+      }
+
+      setScannerStatus("starting");
+      setScannerError("");
+      stopCamera();
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: deviceId
+            ? { deviceId: { exact: deviceId } }
+            : { facingMode: { ideal: "environment" } },
+          audio: false,
+        });
+        streamRef.current = stream;
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(() => {});
+        }
+
+        detectorRef.current = new Detector({ formats: ["qr_code"] });
+        setScannerStatus("scanning");
+        lastDecodedRef.current = "";
+        lastDecodedAtRef.current = 0;
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        setCameraDevices(devices.filter((d) => d.kind === "videoinput"));
+        const track = stream.getVideoTracks()[0];
+        const settings = track?.getSettings?.();
+        if (settings?.deviceId) setActiveCameraId(settings.deviceId);
+
+        scanRafRef.current = requestAnimationFrame(scanLoop);
+      } catch (err: any) {
+        stopCamera();
+        setScannerStatus("error");
+        const name = err?.name || "";
+        if (name === "NotAllowedError" || name === "SecurityError") {
+          setScannerError(
+            "Camera permission was blocked. Allow camera access in the browser, then try again."
+          );
+        } else if (name === "NotFoundError" || name === "OverconstrainedError") {
+          setScannerError("No camera was found on this device. Use manual entry below.");
+        } else {
+          setScannerError(
+            err?.message || "Could not start the camera. Use manual entry below."
+          );
+        }
+      }
+    },
+    [scanLoop, stopCamera]
+  );
+
+  const closeScannerModal = () => {
+    stopCamera();
+    setScannerStatus("idle");
+    setScannerError("");
+    setCameraDevices([]);
+    setActiveCameraId("");
+    setIsScannerModalOpen(false);
+    setVerificationResult(null);
+    setPendingCollection(null);
+  };
+
+  // Stop the camera whenever the modal closes or the component unmounts.
+  useEffect(() => {
+    return () => stopCamera();
+  }, [stopCamera]);
+
   const simulateOpticalScan = (token: string) => {
+    stopCamera();
+    setScannerStatus("idle");
     setIsScanningSimulated(true);
     setTimeout(() => {
       setIsScanningSimulated(false);
@@ -190,11 +352,7 @@ export const KitchenDashboard: React.FC = () => {
                 </div>
               </div>
               <button
-                onClick={() => {
-                  setIsScannerModalOpen(false);
-                  setVerificationResult(null);
-                  setPendingCollection(null);
-                }}
+                onClick={closeScannerModal}
                 className="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
               >
                 ✕
@@ -203,10 +361,32 @@ export const KitchenDashboard: React.FC = () => {
 
             {/* Live Camera / Scanner Viewport View */}
             <div className="relative w-full h-56 bg-slate-950 rounded-2xl border-2 border-dashed border-emerald-500/40 flex flex-col items-center justify-center p-4 overflow-hidden">
-              {/* Laser Animation Bar */}
-              <div className="absolute inset-x-8 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent z-10 laser-scanner-line shadow-[0_0_15px_#10b981]"></div>
+              {/* Live video feed — kept mounted so the ref is stable; hidden until active */}
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                autoPlay
+                className={`absolute inset-0 h-full w-full object-cover ${
+                  scannerStatus === "scanning" ? "block" : "hidden"
+                }`}
+              />
 
-              {isScanningSimulated ? (
+              {/* Targeting reticle + laser while scanning */}
+              {(scannerStatus === "scanning" || isScanningSimulated) && (
+                <>
+                  <div className="absolute inset-x-8 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent z-10 laser-scanner-line shadow-[0_0_15px_#10b981]"></div>
+                  <div className="absolute z-10 w-40 h-40 border-2 border-emerald-400/80 rounded-2xl shadow-[0_0_20px_#10b98155]"></div>
+                </>
+              )}
+
+              {scannerStatus === "scanning" ? (
+                <div className="absolute bottom-3 inset-x-0 z-10 flex justify-center">
+                  <span className="text-[11px] font-mono font-bold text-emerald-300 bg-slate-950/70 px-3 py-1 rounded-full">
+                    CAMERA LIVE — POINT AT CUSTOMER QR
+                  </span>
+                </div>
+              ) : isScanningSimulated ? (
                 <div className="flex flex-col items-center gap-2 text-emerald-400 animate-pulse">
                   <span className="material-symbols-outlined text-[44px]">
                     document_scanner
@@ -214,6 +394,19 @@ export const KitchenDashboard: React.FC = () => {
                   <span className="text-xs font-mono font-bold">
                     DECODING DIGITAL TOKEN QR...
                   </span>
+                </div>
+              ) : scannerStatus === "starting" ? (
+                <div className="flex flex-col items-center gap-2 text-emerald-400 animate-pulse">
+                  <span className="material-symbols-outlined text-[44px]">
+                    videocam
+                  </span>
+                  <span className="text-xs font-mono font-bold">STARTING CAMERA...</span>
+                </div>
+              ) : scannerStatus === "error" ? (
+                <div className="flex flex-col items-center gap-2 text-red-300 text-center px-4">
+                  <span className="material-symbols-outlined text-[40px]">no_photography</span>
+                  <span className="text-xs font-bold">Camera unavailable</span>
+                  <span className="text-[11px] text-slate-400">{scannerError}</span>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3 text-center">
@@ -223,9 +416,57 @@ export const KitchenDashboard: React.FC = () => {
                     </span>
                   </div>
                   <span className="text-xs text-slate-400 font-medium">
-                    Scan the customer QR, then check the food before handover
+                    Tap &quot;Start Camera&quot; to scan the customer QR, then check the food before handover
                   </span>
                 </div>
+              )}
+            </div>
+
+            {/* Camera Controls */}
+            <div className="flex flex-wrap items-center gap-2">
+              {scannerStatus === "scanning" ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={stopCamera}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold hover:bg-slate-700 flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">stop_circle</span>
+                    Stop Camera
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => startCamera(activeCameraId)}
+                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold hover:bg-slate-700 flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">restart_alt</span>
+                    Restart
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startCamera()}
+                  disabled={scannerStatus === "starting"}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-[16px]">videocam</span>
+                  {scannerStatus === "error" ? "Retry Camera" : "Start Camera"}
+                </button>
+              )}
+
+              {cameraDevices.length > 1 && (
+                <select
+                  value={activeCameraId}
+                  onChange={(e) => startCamera(e.target.value)}
+                  className="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold outline-none focus:border-emerald-500"
+                >
+                  {cameraDevices.map((d, i) => (
+                    <option key={d.deviceId || i} value={d.deviceId}>
+                      {d.label || `Camera ${i + 1}`}
+                    </option>
+                  ))}
+                </select>
               )}
             </div>
 
@@ -344,7 +585,10 @@ export const KitchenDashboard: React.FC = () => {
         {/* Dedicated Digital Scanner Button */}
         <div className="flex items-center gap-3 w-full md:w-auto">
           <button
-            onClick={() => setIsScannerModalOpen(true)}
+            onClick={() => {
+              setIsScannerModalOpen(true);
+              startCamera();
+            }}
             className="w-full md:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-900/30 flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-[18px]">
