@@ -6,10 +6,11 @@ const {
   login,
   getMe,
   getPreferences,
-  updatePreferences
+  updatePreferences,
+  topUpSmartCard
 } = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
-const { validate, registerSchema, loginSchema } = require('../middleware/validate');
+const { validate, registerSchema, loginSchema, topUpSchema } = require('../middleware/validate');
 
 // Criterion A6: Rate limiting on authentication routes (max 20 attempts per 15 minutes)
 const authLimiter = rateLimit({
@@ -27,6 +28,7 @@ const authLimiter = rateLimit({
 router.post('/register', authLimiter, validate(registerSchema), register);
 router.post('/login', authLimiter, validate(loginSchema), login);
 router.get('/me', authenticate, getMe);
+router.post('/smart-card/topup', authenticate, validate(topUpSchema), topUpSmartCard);
 router.get('/preferences', authenticate, getPreferences);
 router.patch('/preferences', authenticate, updatePreferences);
 

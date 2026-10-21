@@ -38,7 +38,45 @@ const getAllUsers = asyncHandler(async (req, res) => {
  * Update user role or account status (Admin)
  */
 const updateUserRoleAndStatus = asyncHandler(async (req, res) => {
-  const { role, account_status } = req.body;
+  const { role, account_status, smart_card_balance } = req.body;
+
+  if (require('mongoose').connection.readyState !== 1) {
+    const InMemoryStore = require('../services/inMemoryStore');
+    const target = InMemoryStore.findUserById(req.params.id);
+    if (!target) {
+      return res.status(404).json({
+        message: 'User not found',
+        details: { id: req.params.id }
+      });
+    }
+
+    const updated = InMemoryStore.updateUser(target._id, {
+      role,
+      account_status,
+      smart_card_balance:
+        smart_card_balance !== undefined ? Number(smart_card_balance) : undefined
+    });
+
+    InMemoryStore.addLog({
+      userId: req.user._id,
+      userName: req.user.name,
+      role: req.user.role,
+      action: 'USER_PERMISSIONS_UPDATED',
+      details: {
+        targetUserId: updated._id,
+        targetEmail: updated.email,
+        newRole: updated.role,
+        status: updated.account_status
+      }
+    });
+
+    const { passwordHash, ...safeUser } = updated;
+    return res.json({
+      message: 'User role and status updated',
+      data: safeUser
+    });
+  }
+
   const user = await User.findById(req.params.id);
 
   if (!user) {
@@ -50,6 +88,7 @@ const updateUserRoleAndStatus = asyncHandler(async (req, res) => {
 
   if (role) user.role = role;
   if (account_status) user.account_status = account_status;
+  if (smart_card_balance !== undefined) user.smart_card_balance = Number(smart_card_balance);
 
   await user.save();
 
@@ -61,9 +100,10 @@ const updateUserRoleAndStatus = asyncHandler(async (req, res) => {
     details: { targetUserId: user._id, targetEmail: user.email, newRole: user.role, status: user.account_status }
   });
 
+  const { passwordHash, ...safeUser } = user.toObject();
   return res.json({
     message: 'User role and status updated',
-    data: user
+    data: safeUser
   });
 });
 

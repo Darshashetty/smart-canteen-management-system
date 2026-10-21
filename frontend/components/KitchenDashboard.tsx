@@ -77,18 +77,28 @@ export const KitchenDashboard: React.FC = () => {
     if (!tokenOrId) return;
 
     let lookup: { token_number?: string; order_id?: string; qr_payload?: string };
-    try {
-      const qrPayload = JSON.parse(tokenOrId);
-      lookup =
-        qrPayload.token || qrPayload.order_id
-          ? { qr_payload: JSON.stringify(qrPayload) }
-          : {};
-    } catch {
-      // Token numbers look like C-023 (case-insensitive); everything else
-      // (ORD-... order IDs or 24-hex Mongo IDs) is sent as an order identifier.
-      lookup = /^c-\d+$/i.test(tokenOrId)
-        ? { token_number: tokenOrId.toUpperCase() }
-        : { order_id: tokenOrId };
+    // QR codes now encode a link (?order=ORD-...&token=C-023); pasting the
+    // scanned URL straight into the box must resolve like the QR itself.
+    const urlOrder = tokenOrId.match(/[?&]order=([^&\s]+)/);
+    const urlToken = tokenOrId.match(/[?&]token=([^&\s]+)/);
+    if (/^https?:\/\//i.test(tokenOrId) && (urlOrder || urlToken)) {
+      lookup = urlOrder
+        ? { order_id: decodeURIComponent(urlOrder[1]) }
+        : { token_number: decodeURIComponent(urlToken![1]).toUpperCase() };
+    } else {
+      try {
+        const qrPayload = JSON.parse(tokenOrId);
+        lookup =
+          qrPayload.token || qrPayload.order_id
+            ? { qr_payload: JSON.stringify(qrPayload) }
+            : {};
+      } catch {
+        // Token numbers look like C-023 (case-insensitive); everything else
+        // (ORD-... order IDs or 24-hex Mongo IDs) is sent as an order identifier.
+        lookup = /^c-\d+$/i.test(tokenOrId)
+          ? { token_number: tokenOrId.toUpperCase() }
+          : { order_id: tokenOrId };
+      }
     }
 
     if (!lookup.token_number && !lookup.order_id && !lookup.qr_payload) return;

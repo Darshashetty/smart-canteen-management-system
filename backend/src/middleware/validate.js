@@ -201,6 +201,14 @@ const updateCanteenAccountSchema = z.object({
   contact_number: z.string().optional()
 });
 
+const topUpSchema = z.object({
+  amount: z
+    .number({ invalid_type_error: 'Top-up amount must be a number' })
+    .finite('Top-up amount must be a finite number')
+    .positive('Top-up amount must be greater than zero')
+    .max(100000, 'Top-up amount cannot exceed Rs. 100000 per transaction')
+});
+
 module.exports = {
   validate,
   validateObjectId,
@@ -221,5 +229,6 @@ module.exports = {
   categorySchema,
   updateCategorySchema,
   canteenAccountSchema,
-  updateCanteenAccountSchema
+  updateCanteenAccountSchema,
+  topUpSchema
 };

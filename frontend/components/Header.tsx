@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 import { UserRole } from "../app/types";
+import { SmartCardTopUpModal } from "./SmartCardTopUpModal";
 
 export const Header: React.FC = () => {
   const {
@@ -20,6 +21,7 @@ export const Header: React.FC = () => {
   const pathname = usePathname();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showTopUp, setShowTopUp] = useState(false);
   const canAccessKitchen = isAuthenticated && ["kitchen", "manager", "admin"].includes(role);
   const canAccessManager = isAuthenticated && ["manager", "admin"].includes(role);
   const canAccessAdmin = isAuthenticated && role === "admin";
@@ -187,6 +189,23 @@ export const Header: React.FC = () => {
             )}
 
             {/* Cart Icon Trigger */}
+            {role === "customer" && (
+              <button
+                onClick={() => setShowTopUp(true)}
+                aria-label="Smart card balance"
+                className="hidden sm:inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full transition-all active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[16px] text-orange-600">
+                  contactless
+                </span>
+                <span className="text-xs font-extrabold text-slate-800 whitespace-nowrap">
+                  Rs. {(currentUser.smartCardBalance ?? 0).toFixed(0)}
+                </span>
+                <span className="material-symbols-outlined text-[14px] text-slate-500">
+                  add
+                </span>
+              </button>
+            )}
             {role === "customer" && (
               <Link
                 href="/cart"
@@ -378,6 +397,9 @@ export const Header: React.FC = () => {
           </div>
         )}
       </header>
+
+      {/* Smart-card Add Money recharge */}
+      <SmartCardTopUpModal open={showTopUp} onClose={() => setShowTopUp(false)} />
 
       {/* Global Floating Toast Alert */}
       {toastMessage && (

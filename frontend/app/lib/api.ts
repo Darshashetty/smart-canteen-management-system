@@ -88,6 +88,7 @@ export interface LoginResponse {
     role: string;
     account_status: string;
     phone: string;
+    smart_card_balance?: number;
   };
 }
 
@@ -114,6 +115,15 @@ export const authAPI = {
       method: "PATCH",
       body: JSON.stringify(preferences),
     }),
+
+  topUpSmartCard: (amount: number) =>
+    apiFetch<{ message: string; data: { smart_card_balance: number; amount: number } }>(
+      "/auth/smart-card/topup",
+      {
+        method: "POST",
+        body: JSON.stringify({ amount }),
+      }
+    ),
 };
 
 // ─── Menu APIs ─────────────────────────────────────────

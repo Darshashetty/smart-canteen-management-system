@@ -14,7 +14,15 @@ const {
   clearSlotIfEmpty
 } = require('../services/slotService');
 const { notifyOrderCancelled } = require('../services/notificationService');
-const { ORDER_STATUS, PAYMENT_STATUS, DEFAULT_SETTINGS, MENU_ITEM_STATUS } = require('../config/constants');
+const {
+  ORDER_STATUS,
+  PAYMENT_STATUS,
+  DEFAULT_SETTINGS,
+  MENU_ITEM_STATUS,
+  PAYMENT_METHODS,
+  ONLINE_PAYMENT_METHODS
+} = require('../config/constants');
+const { deductSmartCardBalance, creditSmartCardBalance } = require('../services/smartCardService');
 
 /**
  * Defense-in-depth ownership guard (closes IDOR/BOLA).
@@ -38,11 +46,54 @@ const isOrderAccessDenied = (req, res, order) => {
 };
 
 /**
- * Pre-Order Creation Controller (Criteria A1, A2, A7)
+ * Settles the money side of a cancellation and returns the payment_status to
+ * persist. Called only AFTER the status transition succeeded, so the refund can
+ * happen at most once per order.
+ *  - smart_card: credits the exact order total back to the card balance
+ *  - anything else marked Paid: recorded as Refunded (settled at the counter)
  */
-const createPreOrder = asyncHandler(async (req, res) => {
-  const { items, pickup_slot, pickup_time, idempotency_key, payment_method } = req.body;
+const settlePaymentOnCancel = async (order) => {
+  const dbConnected = require('mongoose').connection.readyState === 1;
+  const statusValue = (value) => (dbConnected ? value : String(value).toLowerCase());
+  const isPaid = String(order.payment_status || '').toLowerCase() === 'paid';
+  if (!isPaid) return order.payment_status;
+
+  const method = String(order.payment_method || '');
+
+  if (method === PAYMENT_METHODS.SMART_CARD) {
+    await creditSmartCardBalance(order.customer_id, Number(order.total_amount) || 0);
+    return statusValue(PAYMENT_STATUS.REFUNDED);
+  }
+
+  return statusValue(PAYMENT_STATUS.REFUNDED);
+};
+
+/**
+ * Pre-Order Creation Controller (Criteria A1, A2, A7)
+ *
+ * Payment is settled synchronously at placement: smart_card debits the card
+ * balance, card/online are marked Paid instantly, cash stays Pending until the
+ * pickup counter.
+ */
+const placeOrder = async (req, res) => {
+  const { items, pickup_slot, pickup_time, idempotency_key } = req.body;
+  let payment_method = req.body.payment_method;
   const customerId = req.user._id;
+
+  if (!payment_method) {
+    payment_method = PAYMENT_METHODS.CASH_ON_COUNTER;
+  } else if (
+    payment_method !== PAYMENT_METHODS.SMART_CARD &&
+    payment_method !== PAYMENT_METHODS.CASH_ON_COUNTER &&
+    !ONLINE_PAYMENT_METHODS.includes(payment_method)
+  ) {
+    return res.status(400).json({
+      message: `Unsupported payment method '${payment_method}'.`,
+      details: {
+        supported: [PAYMENT_METHODS.SMART_CARD, PAYMENT_METHODS.CASH_ON_COUNTER, ...ONLINE_PAYMENT_METHODS]
+      }
+    });
+  }
 
   if (require('mongoose').connection.readyState !== 1) {
     const InMemoryStore = require('../services/inMemoryStore');
@@ -61,6 +112,28 @@ const createPreOrder = asyncHandler(async (req, res) => {
       }
     }
 
+    // Reserve smart-card funds before creating the order (rolled back on failure)
+    let smartCardCharged = 0;
+    if (payment_method === PAYMENT_METHODS.SMART_CARD) {
+      let estimatedTotal = 0;
+      for (const it of items) {
+        const menu = InMemoryStore.getMenuItemById(it.item_id);
+        estimatedTotal += (menu ? menu.price : 200) * (Number(it.quantity) || 1);
+      }
+      const deductResult = await deductSmartCardBalance(customerId, estimatedTotal);
+      if (!deductResult.success) {
+        return res.status(402).json({
+          message: 'Insufficient smart card balance for this order.',
+          details: {
+            required: estimatedTotal,
+            balance: deductResult.balance,
+            payment_method: PAYMENT_METHODS.SMART_CARD
+          }
+        });
+      }
+      smartCardCharged = estimatedTotal;
+    }
+
     let newOrder;
     try {
       newOrder = await InMemoryStore.createOrder({
@@ -73,10 +146,15 @@ const createPreOrder = asyncHandler(async (req, res) => {
         paymentMethod: payment_method
       });
     } catch (error) {
+      if (smartCardCharged > 0) await creditSmartCardBalance(customerId, smartCardCharged);
       return res.status(error.statusCode || 400).json({
         message: error.message,
         details: error.details || null
       });
+    }
+
+    if (payment_method === PAYMENT_METHODS.SMART_CARD || ONLINE_PAYMENT_METHODS.includes(payment_method)) {
+      newOrder.payment_status = 'paid';
     }
 
     InMemoryStore.addLog({
@@ -84,7 +162,7 @@ const createPreOrder = asyncHandler(async (req, res) => {
       userName: req.user.name,
       role: req.user.role,
       action: 'ORDER_PLACED',
-      details: { order_id: newOrder.order_id, token: newOrder.token_number }
+      details: { order_id: newOrder.order_id, token: newOrder.token_number, payment_method }
     });
     const { getSocketIOInstance } = require('../services/notificationService');
     const io = getSocketIOInstance();
@@ -93,6 +171,7 @@ const createPreOrder = asyncHandler(async (req, res) => {
       io.emit('queue_updated');
       if (pickup_slot) io.emit('pickup_slots_updated');
     }
+
     return res.status(201).json({
       message: 'Pre-order placed successfully',
       duplicate: false,
@@ -135,6 +214,22 @@ const createPreOrder = asyncHandler(async (req, res) => {
   // Tracking decremented items for atomic rollback on failure (A1)
   const decrementedItems = [];
   let slotReserved = false;
+  let smartCardCharged = 0;
+
+  const rollbackStockAndSlot = async () => {
+    for (const rolled of decrementedItems) {
+      await MenuItem.findByIdAndUpdate(rolled.id, {
+        $inc: {
+          [rolled.stockField]: rolled.qty,
+          total_orders_count: -1,
+          total_quantity_sold: -rolled.qty
+        }
+      });
+    }
+    if (slotReserved && pickup_slot) {
+      await releaseSlotAtomic(pickup_slot, new Date());
+    }
+  };
 
   try {
     // Criterion A1: Atomic stock decrement with conditional update ({ available_quantity: { $gte: qty } })
@@ -239,6 +334,23 @@ const createPreOrder = asyncHandler(async (req, res) => {
       slotReserved = true;
     }
 
+    // Reserve smart-card funds before committing the order (rolled back below on failure)
+    if (payment_method === PAYMENT_METHODS.SMART_CARD) {
+      const deductResult = await deductSmartCardBalance(customerId, calculatedTotal);
+      if (!deductResult.success) {
+        await rollbackStockAndSlot();
+        return res.status(402).json({
+          message: 'Insufficient smart card balance for this order.',
+          details: {
+            required: calculatedTotal,
+            balance: deductResult.balance,
+            payment_method: PAYMENT_METHODS.SMART_CARD
+          }
+        });
+      }
+      smartCardCharged = calculatedTotal;
+    }
+
     // Criterion A4: Atomic daily token generation (C-001, C-002...)
     const tokenNumber = await generateToken();
 
@@ -264,7 +376,11 @@ const createPreOrder = asyncHandler(async (req, res) => {
       pickup_slot: pickup_slot || '',
       estimated_ready_time: etaData.estimatedReadyTime,
       order_status: ORDER_STATUS.PLACED,
-      payment_status: payment_method === 'online' ? PAYMENT_STATUS.PAID : PAYMENT_STATUS.PENDING,
+      payment_status:
+        payment_method === PAYMENT_METHODS.SMART_CARD || ONLINE_PAYMENT_METHODS.includes(payment_method)
+          ? PAYMENT_STATUS.PAID
+          : PAYMENT_STATUS.PENDING,
+      payment_method,
       qr_code: qrCode,
       idempotency_key: idempotency_key || null
     });
@@ -276,7 +392,7 @@ const createPreOrder = asyncHandler(async (req, res) => {
       action: 'ORDER_PLACED',
       order_id: order.order_id,
       token_number: order.token_number,
-      details: { total: order.total_amount, itemsCount: validatedItems.length }
+      details: { total: order.total_amount, itemsCount: validatedItems.length, payment_method }
     });
 
     // Real-time sync (parity with in-memory path): staff queue + slot availability
@@ -299,19 +415,11 @@ const createPreOrder = asyncHandler(async (req, res) => {
       }
     });
   } catch (error) {
-    // Criterion A1 & A2: Rollback stock and slot on any creation failure
-    for (const rolled of decrementedItems) {
-      await MenuItem.findByIdAndUpdate(rolled.id, {
-        $inc: {
-          [rolled.stockField]: rolled.qty,
-          total_orders_count: -1,
-          total_quantity_sold: -rolled.qty
-        }
-      });
-    }
-
-    if (slotReserved && pickup_slot) {
-      await releaseSlotAtomic(pickup_slot, new Date());
+    // Criterion A1 & A2: Rollback stock, slot and smart-card debit on any creation failure
+    await rollbackStockAndSlot();
+    if (smartCardCharged > 0) {
+      await creditSmartCardBalance(customerId, smartCardCharged);
+      smartCardCharged = 0;
     }
 
     // Criterion A2: Handle database unique index conflict on (customer_id, idempotency_key)
@@ -331,7 +439,13 @@ const createPreOrder = asyncHandler(async (req, res) => {
 
     throw error;
   }
-});
+};
+
+/**
+ * Standard pre-order. Payment settles synchronously: smart_card debits the
+ * balance, card/online are marked Paid instantly, cash stays Pending.
+ */
+const createPreOrder = asyncHandler((req, res) => placeOrder(req, res));
 
 /**
  * Get orders for logged in customer (or all orders for staff/manager)
@@ -458,6 +572,8 @@ const cancelOrder = asyncHandler(async (req, res) => {
     }
     const updated = InMemoryStore.updateOrderStatus(orderId, ORDER_STATUS.CANCELLED, reason || 'Cancelled by customer');
     updated.cancellation_reason = reason || 'Cancelled by customer';
+    // Money side of the cancellation: smart-card credit / Refunded bookkeeping
+    updated.payment_status = await settlePaymentOnCancel(updated);
 
     // Parity with DB path: restore stock, notify, log and broadcast
     for (const item of order.items) {
@@ -514,8 +630,7 @@ const cancelOrder = asyncHandler(async (req, res) => {
     {
       $set: {
         order_status: ORDER_STATUS.CANCELLED,
-        cancellation_reason: reason || 'Cancelled by customer',
-        payment_status: order.payment_status === PAYMENT_STATUS.PAID ? PAYMENT_STATUS.REFUNDED : order.payment_status
+        cancellation_reason: reason || 'Cancelled by customer'
       }
     },
     { new: true }
@@ -526,6 +641,17 @@ const cancelOrder = asyncHandler(async (req, res) => {
       message: 'Order status changed concurrently. Cancellation failed.',
       details: null
     });
+  }
+
+  // Money side of the cancellation (after the transition, so refunds run at
+  // most once): smart-card credit or Refunded bookkeeping
+  const settledPaymentStatus = await settlePaymentOnCancel(updatedOrder);
+  if (settledPaymentStatus !== updatedOrder.payment_status) {
+    await Order.updateOne(
+      { _id: updatedOrder._id },
+      { $set: { payment_status: settledPaymentStatus } }
+    );
+    updatedOrder.payment_status = settledPaymentStatus;
   }
 
   // Criterion A1: Restore stock and slot on cancellation
@@ -1081,5 +1207,6 @@ module.exports = {
   reorderPastOrder,
   updatePaymentStatus,
   updateOrderPickupTime,
-  getOrderQR
+  getOrderQR,
+  settlePaymentOnCancel
 };

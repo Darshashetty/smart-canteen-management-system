@@ -1,16 +1,28 @@
 const QRCode = require('qrcode');
 
 /**
- * Generates a Base64 Data URL QR Code for order verification
- * Contains token number, order ID, and verification payload
+ * Base URL of the student frontend that opens when a phone camera scans an
+ * order QR code (FRONTEND_URL override, else first CLIENT_ORIGIN, else local dev).
+ */
+const resolveFrontendBase = () => {
+  const explicit = (process.env.FRONTEND_URL || '').trim().replace(/\/+$/, '');
+  if (explicit) return explicit;
+  const fromOrigins = (process.env.CLIENT_ORIGIN || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin && origin !== '*');
+  return fromOrigins[0] || 'http://localhost:3000';
+};
+
+/**
+ * Generates a Base64 Data URL QR Code for order verification.
+ * Encodes a human/tap-friendly link to the live order tracker so a phone
+ * camera opens the order instead of showing raw JSON. The staff scanner
+ * accepts this same URL (see collectionController.parseScannedPayload).
  */
 const generateQRCodeDataURL = async (tokenNumber, orderId) => {
   try {
-    const payload = JSON.stringify({
-      token: tokenNumber,
-      order_id: orderId,
-      timestamp: Date.now()
-    });
+    const payload = `${resolveFrontendBase()}/live-order?order=${encodeURIComponent(orderId)}&token=${encodeURIComponent(tokenNumber)}`;
 
     const qrDataUrl = await QRCode.toDataURL(payload, {
       errorCorrectionLevel: 'M',

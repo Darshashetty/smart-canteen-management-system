@@ -9,8 +9,15 @@
  */
 
 const bcrypt = require('bcryptjs');
-const { ROLES, ACCOUNT_STATUS, ORDER_STATUS, MENU_ITEM_STATUS, DEFAULT_SETTINGS } = require('../config/constants');
+const { ROLES, ACCOUNT_STATUS, ORDER_STATUS, MENU_ITEM_STATUS, DEFAULT_SETTINGS, SMART_CARD_DEFAULT_BALANCE } = require('../config/constants');
 const { generateQRCodeDataURL } = require('../utils/qrCodeGenerator');
+
+// Dynamically created records get valid 24-hex _ids (outside the seed range)
+// so route-level ObjectId validation accepts them
+let memoryIdCounter = 0x800;
+const nextMemoryId = () =>
+  '64f1a2b3c4d5e6f7a8b9c' +
+  (0x800 + (memoryIdCounter++ % 0x800)).toString(16).padStart(3, '0');
 
 // 1. Seed Users
 const memoryUsers = [
@@ -22,6 +29,7 @@ const memoryUsers = [
     role: ROLES.CUSTOMER,
     account_status: ACCOUNT_STATUS.ACTIVE,
     phone: '+923001234567',
+    smart_card_balance: SMART_CARD_DEFAULT_BALANCE,
     createdAt: new Date()
   },
   {
@@ -32,6 +40,7 @@ const memoryUsers = [
     role: ROLES.STAFF,
     account_status: ACCOUNT_STATUS.ACTIVE,
     phone: '+923001234568',
+    smart_card_balance: SMART_CARD_DEFAULT_BALANCE,
     createdAt: new Date()
   },
   {
@@ -42,6 +51,7 @@ const memoryUsers = [
     role: ROLES.MANAGER,
     account_status: ACCOUNT_STATUS.ACTIVE,
     phone: '+923001234569',
+    smart_card_balance: SMART_CARD_DEFAULT_BALANCE,
     createdAt: new Date()
   },
   {
@@ -52,6 +62,7 @@ const memoryUsers = [
     role: ROLES.ADMIN,
     account_status: ACCOUNT_STATUS.ACTIVE,
     phone: '+923001234570',
+    smart_card_balance: SMART_CARD_DEFAULT_BALANCE,
     createdAt: new Date()
   }
 ];
@@ -305,17 +316,27 @@ const InMemoryStore = {
   },
   createUser: async ({ name, email, password, phone, role = ROLES.CUSTOMER }) => {
     const newUser = {
-      _id: '64f1a2b3c4d5e6f7a8b9c' + Math.floor(1000 + Math.random() * 9000),
+      _id: nextMemoryId(),
       name,
       email: email.toLowerCase(),
       passwordHash: await bcrypt.hash(password, 10),
       role,
       account_status: ACCOUNT_STATUS.ACTIVE,
       phone: phone || '',
+      smart_card_balance: SMART_CARD_DEFAULT_BALANCE,
       createdAt: new Date()
     };
     memoryUsers.push(newUser);
     return newUser;
+  },
+  updateUser: (id, fields = {}) => {
+    const user = InMemoryStore.findUserById(id);
+    if (!user) return null;
+    const allowed = ['role', 'account_status', 'smart_card_balance', 'phone', 'name'];
+    for (const key of allowed) {
+      if (fields[key] !== undefined) user[key] = fields[key];
+    }
+    return user;
   },
   comparePassword: async (providedPassword, user) => {
     return await bcrypt.compare(providedPassword, user.passwordHash);
@@ -438,7 +459,7 @@ const InMemoryStore = {
     });
 
     const newOrder = {
-      _id: '64f1a2b3c4d5e6f7a8b9c' + Math.floor(2000 + Math.random() * 8000),
+      _id: nextMemoryId(),
       order_id: orderId,
       customer_id: customerId,
       customer_name: customerName,

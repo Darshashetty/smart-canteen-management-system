@@ -1,15 +1,40 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
-import { orderAPI } from "../app/lib/api";
-import { OrderStatus } from "../app/types";
+import { mapBackendOrder, orderAPI } from "../app/lib/api";
+import { Order, OrderStatus } from "../app/types";
 
 export const LiveOrderTracker: React.FC = () => {
   const router = useRouter();
-  const { activeOrder, updateOrderStatus } = useApp();
+  const { activeOrder: contextOrder, updateOrderStatus } = useApp();
   const [qrFallback, setQrFallback] = useState<{ id?: string; qr?: string }>({});
+  const [scannedOrder, setScannedOrder] = useState<Order | null>(null);
+  const [scanNotice, setScanNotice] = useState("");
+  // Phone cameras open the QR link with ?order=ORD-...&token=C-023 — show
+  // exactly that order (owned by this account), not just the active one.
+  const activeOrder = scannedOrder ?? contextOrder;
   const orderId = activeOrder?.id;
   const hasQr = Boolean(activeOrder?.qrCode);
+
+  useEffect(() => {
+    const scannedId = new URLSearchParams(window.location.search).get("order");
+    if (!scannedId || contextOrder?.id === scannedId || scannedOrder?.id === scannedId) return;
+    let cancelled = false;
+    orderAPI
+      .getById(scannedId)
+      .then((res) => {
+        if (!cancelled && res.data) setScannedOrder(mapBackendOrder(res.data));
+      })
+      .catch((err) => {
+        if (!cancelled)
+          setScanNotice(
+            err?.message || "Could not load the order from this QR code."
+          );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [contextOrder?.id, scannedOrder?.id]);
 
   // Lazily fetch/regenerate the QR for legacy orders that were created without
   // one. setState only happens in the async callback, never synchronously.
@@ -74,6 +99,12 @@ export const LiveOrderTracker: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto w-full px-3 sm:px-4 pt-4 pb-32 flex flex-col gap-5">
+      {scanNotice && (
+        <div className="w-full bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-3 text-xs font-bold flex items-start gap-2">
+          <span className="material-symbols-outlined text-[16px]">error</span>
+          <span>{scanNotice}</span>
+        </div>
+      )}
       {/* Live Kitchen Banner with WebSocket Indicator */}
       <div className="w-full bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 text-orange-950 rounded-2xl p-4 shadow-sm flex flex-col gap-2 relative overflow-hidden">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

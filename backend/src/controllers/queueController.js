@@ -77,6 +77,14 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     }
 
     const updatedOrder = InMemoryStore.updateOrderStatus(orderId, status, delay_reason || '');
+
+    // Money settlement for a staff rejection/cancellation (smart-card credit /
+    // Refunded bookkeeping) — runs after the transition, so at most once
+    if (status === ORDER_STATUS.REJECTED || status === ORDER_STATUS.CANCELLED) {
+      const { settlePaymentOnCancel } = require('./orderController');
+      updatedOrder.payment_status = await settlePaymentOnCancel(updatedOrder);
+    }
+
     if (status === ORDER_STATUS.READY) await notifyOrderReady(updatedOrder);
     else if (status === ORDER_STATUS.PREPARING) await notifyOrderPreparing(updatedOrder);
     else if (status === ORDER_STATUS.ACCEPTED) await notifyOrderAccepted(updatedOrder);
@@ -180,14 +188,31 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   const { getSocketIOInstance } = require('../services/notificationService');
   const io = getSocketIOInstance();
 
-  // An order never picked up frees its reserved pickup-slot capacity (at most once)
-  if (status === ORDER_STATUS.NOT_COLLECTED) {
+  // Terminal statuses free the reserved pickup-slot capacity exactly once
+  // (releaseSlotForOrder is idempotent through the slot_released flag, so it
+  // is safe even when the collection/cancel endpoints already released it)
+  let slotReleased = false;
+  if (RELEASABLE.has(status)) {
     const { releaseSlotForOrder } = require('../services/slotService');
-    const released = await releaseSlotForOrder(updatedOrder);
-    if (io && released) io.emit('pickup_slots_updated');
+    slotReleased = await releaseSlotForOrder(updatedOrder);
+  }
+
+  // Money settlement for a staff rejection/cancellation (smart-card credit /
+  // Refunded bookkeeping), after the transition so it runs at most once
+  if (status === ORDER_STATUS.REJECTED || status === ORDER_STATUS.CANCELLED) {
+    const { settlePaymentOnCancel } = require('./orderController');
+    const settledPaymentStatus = await settlePaymentOnCancel(updatedOrder);
+    if (settledPaymentStatus !== updatedOrder.payment_status) {
+      await Order.updateOne(
+        { _id: updatedOrder._id },
+        { $set: { payment_status: settledPaymentStatus } }
+      );
+      updatedOrder.payment_status = settledPaymentStatus;
+    }
   }
 
   if (io) {
+    if (slotReleased) io.emit('pickup_slots_updated');
     io.emit('queue_updated');
     io.emit('order_status_updated', updatedOrder);
   }

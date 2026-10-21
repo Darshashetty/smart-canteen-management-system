@@ -357,6 +357,9 @@ interface AppContextType {
   cartCount: number;
   slots: PickupSlot[];
   refreshSlots: () => Promise<void>;
+  refreshOrders: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  topUpSmartCard: (amount: number) => Promise<boolean>;
   selectedSlotId: string;
   setSelectedSlotId: (slotId: string) => void;
   orders: Order[];
@@ -436,6 +439,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
+  // ─── Refresh signed-in profile (e.g. after a smart-card debit) ──
+  const refreshProfile = useCallback(async () => {
+    try {
+      const res = await authAPI.getMe();
+      if (!res.user) return;
+      setCurrentUser((prev) => ({
+        ...prev,
+        id: res.user.id || res.user._id || prev.id,
+        name: res.user.name || prev.name,
+        email: res.user.email || prev.email,
+        smartCardBalance:
+          typeof res.user.smart_card_balance === "number"
+            ? res.user.smart_card_balance
+            : prev.smartCardBalance,
+      }));
+    } catch (err) {
+      console.warn("[API] Failed to refresh profile:", err);
+    }
+  }, []);
+
+  // ─── Top up the smart card (demo instant credit) ───────────
+  const topUpSmartCard = useCallback(
+    async (amount: number) => {
+      try {
+        const res = await authAPI.topUpSmartCard(amount);
+        setCurrentUser((prev) => ({
+          ...prev,
+          smartCardBalance: res.data?.smart_card_balance ?? prev.smartCardBalance,
+        }));
+        showToast(res.message || `Rs. ${amount.toFixed(2)} added to your smart card.`);
+        return true;
+      } catch (err) {
+        showToast(
+          err instanceof Error ? err.message : "Could not top up the smart card."
+        );
+        return false;
+      }
+    },
+    [showToast]
+  );
+
   // ─── Fetch pickup slots from backend ──────────────────
   const fetchSlots = useCallback(async () => {
     try {
@@ -481,7 +525,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 name: res.user.name,
                 email: res.user.email,
                 role: fRole,
-                smartCardBalance: fRole === "customer" ? 34.5 : undefined,
+                smartCardBalance: fRole === "customer" ? Number(res.user.smart_card_balance ?? 0) : undefined,
                 studentId: fRole === "customer" ? "MUET - 24CS031" : undefined,
               });
               setRoleState(fRole);
@@ -608,7 +652,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: res.user.name,
         email: res.user.email,
         role: fRole,
-        smartCardBalance: fRole === "customer" ? 34.5 : undefined,
+        smartCardBalance: fRole === "customer" ? Number(res.user.smart_card_balance ?? 0) : undefined,
         studentId: fRole === "customer" ? "MUET - 24CS031" : undefined,
       });
       setRoleState(fRole);
@@ -635,7 +679,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: res.user.name,
         email: res.user.email,
         role: fRole,
-        smartCardBalance: fRole === "customer" ? 34.5 : undefined,
+        smartCardBalance: fRole === "customer" ? Number(res.user.smart_card_balance ?? 0) : undefined,
         studentId: fRole === "customer" ? "MUET - 24CS031" : undefined,
       });
       setRoleState(fRole);
@@ -869,9 +913,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             showToast(`✅ Token #${res.data.token_number} confirmed by server!`);
           }
           clearCart();
-          // Refresh menu stock
+          // Refresh menu stock, slot capacity and the smart-card balance
           fetchMenu();
           fetchSlots();
+          refreshProfile();
         })
         .catch((err) => {
           console.warn("[API] Backend order creation failed:", err);
@@ -881,7 +926,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return newOrder;
     },
-    [cart, menu, slots, orders.length, currentUser, cartTotal, showToast, clearCart, fetchMenu, fetchSlots]
+    [cart, menu, slots, orders.length, currentUser, cartTotal, showToast, clearCart, fetchMenu, fetchSlots, refreshProfile]
   );
 
   // ─── Update Order Status (connected to backend) ───────
@@ -1148,6 +1193,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         cartCount,
         slots,
         refreshSlots: fetchSlots,
+        refreshOrders: fetchOrders,
+        refreshProfile,
+        topUpSmartCard,
         selectedSlotId,
         setSelectedSlotId,
         orders,

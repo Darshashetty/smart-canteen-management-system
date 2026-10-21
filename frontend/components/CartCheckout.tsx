@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
+import { SmartCardTopUpModal } from "./SmartCardTopUpModal";
 
 const FALLBACK_MENU_IMAGE = "/menu-fallback.svg";
 
@@ -16,24 +17,82 @@ export const CartCheckout: React.FC = () => {
     selectedSlotId,
     setSelectedSlotId,
     placeOrder,
+    currentUser,
+    isAuthenticated,
+    showToast,
   } = useApp();
 
-  const { isAuthenticated } = useApp();
   const [paymentMethod, setPaymentMethod] = useState<"smart_card" | "card" | "cash_on_counter">("smart_card");
+
+  // Demo in-app card checkout (no external gateway)
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [cardNumber, setCardNumber] = useState("4242 4242 4242 4242");
+  const [cardExpiry, setCardExpiry] = useState("12/28");
+  const [cardCvv, setCardCvv] = useState("123");
+  const [cardError, setCardError] = useState("");
+
+  // Smart-card "Add Money" demo recharge
+  const [showTopUp, setShowTopUp] = useState(false);
+
+  const smartCardBalance = currentUser.smartCardBalance ?? 0;
+  const insufficientBalance = paymentMethod === "smart_card" && smartCardBalance < cartTotal;
+
+  const peakQuotaMax = 5;
+  const currentSlot = slots.find((s) => s.id === selectedSlotId) || slots[1];
 
   const handleConfirmOrder = () => {
     if (!isAuthenticated) {
       router.push("/login");
       return;
     }
+    if (cart.length === 0) return;
+
+    if (paymentMethod === "card") {
+      setCardError("");
+      setShowCardModal(true);
+      return;
+    }
+
+    if (paymentMethod === "smart_card" && insufficientBalance) {
+      setShowTopUp(true);
+      return;
+    }
+
     const res = placeOrder(selectedSlotId, paymentMethod);
     if (res) {
       router.push("/live-order");
     }
   };
 
-  const peakQuotaMax = 5;
-  const currentSlot = slots.find((s) => s.id === selectedSlotId) || slots[1];
+  const handleCardPay = () => {
+    const digits = cardNumber.replace(/\D/g, "");
+    if (digits.length !== 16) {
+      setCardError("Enter a valid 16-digit card number.");
+      return;
+    }
+    if (!/^\d{2}\/\d{2}$/.test(cardExpiry)) {
+      setCardError("Expiry must be in MM/YY format.");
+      return;
+    }
+    if (cardCvv.replace(/\D/g, "").length < 3) {
+      setCardError("CVV must be at least 3 digits.");
+      return;
+    }
+
+    setCardError("");
+    setIsProcessing(true);
+    // Simulated authorization delay, then place the order (backend marks it Paid)
+    window.setTimeout(() => {
+      const res = placeOrder(selectedSlotId, "card");
+      setIsProcessing(false);
+      if (res) {
+        setShowCardModal(false);
+        router.push("/live-order");
+      }
+      // On failure placeOrder already toasted the reason; modal stays open
+    }, 700);
+  };
 
   return (
     <div className="max-w-4xl mx-auto w-full px-3 sm:px-4 pt-3 sm:pt-4 pb-32">
@@ -321,20 +380,24 @@ export const CartCheckout: React.FC = () => {
             {
               id: "smart_card",
               title: "Campus Smart Card",
-              desc: "Instant NFC Balance",
+              desc: `Balance Rs. ${smartCardBalance.toFixed(2)}`,
               status: "Paid",
               icon: "contactless",
-              badge: "Instant Paid",
-              badgeColor: "bg-emerald-100 text-emerald-800"
+              badge: insufficientBalance ? "Low Balance" : "Instant Paid",
+              badgeColor: insufficientBalance
+                ? "bg-rose-100 text-rose-700"
+                : "bg-emerald-100 text-emerald-800",
+              disabled: insufficientBalance,
             },
             {
               id: "card",
               title: "Debit / Credit Card",
-              desc: "Online Checkout",
+              desc: "Instant online payment",
               status: "Paid",
               icon: "credit_card",
               badge: "Instant Paid",
-              badgeColor: "bg-emerald-100 text-emerald-800"
+              badgeColor: "bg-emerald-100 text-emerald-800",
+              disabled: false,
             },
             {
               id: "cash_on_counter",
@@ -343,18 +406,23 @@ export const CartCheckout: React.FC = () => {
               status: "Pending",
               icon: "point_of_sale",
               badge: "Pending",
-              badgeColor: "bg-amber-100 text-amber-800"
-            }
+              badgeColor: "bg-amber-100 text-amber-800",
+              disabled: false,
+            },
           ].map((pm) => {
             const isSelected = paymentMethod === pm.id;
             return (
               <div
                 key={pm.id}
-                onClick={() => setPaymentMethod(pm.id as any)}
-                className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col gap-2 ${
-                  isSelected
-                    ? "bg-gradient-to-r from-orange-50 to-amber-50/40 border-orange-500 ring-2 ring-orange-500/20 shadow-sm"
-                    : "bg-white border-slate-200 hover:border-slate-300"
+                onClick={() => {
+                  if (!pm.disabled) setPaymentMethod(pm.id as any);
+                }}
+                className={`p-3.5 rounded-xl border transition-all flex flex-col gap-2 ${
+                  pm.disabled
+                    ? "bg-slate-50 border-slate-200 opacity-70 cursor-not-allowed"
+                    : isSelected
+                    ? "bg-gradient-to-r from-orange-50 to-amber-50/40 border-orange-500 ring-2 ring-orange-500/20 shadow-sm cursor-pointer"
+                    : "bg-white border-slate-200 hover:border-slate-300 cursor-pointer"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -374,9 +442,30 @@ export const CartCheckout: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between text-[11px] text-slate-500">
                   <span>{pm.desc}</span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pm.badgeColor}`}>
-                    {pm.badge}
-                  </span>
+                  {isSelected && pm.id === "smart_card" ? (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowTopUp(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.stopPropagation();
+                          setShowTopUp(true);
+                        }
+                      }}
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 hover:bg-orange-200 cursor-pointer flex items-center gap-0.5"
+                    >
+                      <span className="material-symbols-outlined text-[12px]">add</span>
+                      Add Money
+                    </span>
+                  ) : (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${pm.badgeColor}`}>
+                      {pm.badge}
+                    </span>
+                  )}
                 </div>
               </div>
             );
@@ -406,6 +495,37 @@ export const CartCheckout: React.FC = () => {
                 {currentSlot?.timeSlot || "Select a pickup slot"}
               </span>
             </div>
+            {paymentMethod === "smart_card" && (
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between">
+                  <span>Smart Card Balance:</span>
+                  <span
+                    className={`font-bold ${
+                      insufficientBalance ? "text-rose-400" : "text-emerald-400"
+                    }`}
+                  >
+                    Rs. {smartCardBalance.toFixed(2)}
+                    {!insufficientBalance &&
+                      ` → Rs. ${(smartCardBalance - cartTotal).toFixed(2)}`}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowTopUp(true)}
+                  className="self-start inline-flex items-center gap-1 text-[11px] font-bold text-orange-300 hover:text-orange-200"
+                >
+                  <span className="material-symbols-outlined text-[14px]">add_card</span>
+                  Add money to smart card
+                </button>
+              </div>
+            )}
+            {paymentMethod === "card" && (
+              <div className="flex justify-between">
+                <span>Payment Confirmation:</span>
+                <span className="font-bold text-emerald-400">
+                  In-app card confirmation
+                </span>
+              </div>
+            )}
             <div className="flex justify-between pt-2 border-t border-slate-800 text-base font-extrabold text-white">
               <span>Total Amount:</span>
               <span className="text-orange-400">Rs. {cartTotal.toFixed(2)}</span>
@@ -414,15 +534,151 @@ export const CartCheckout: React.FC = () => {
 
           <button
             onClick={handleConfirmOrder}
-            className="w-full py-3 sm:py-3.5 bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
+            className="w-full py-3 sm:py-3.5 bg-orange-600 hover:bg-orange-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
           >
             <span className="material-symbols-outlined text-[20px]">
               confirmation_number
             </span>
-            <span>Confirm Pre-Order & Issue Digital Token</span>
+            <span>
+              {insufficientBalance
+                ? "Insufficient Balance — Add Money"
+                : paymentMethod === "card"
+                ? `Review & Pay Rs. ${cartTotal.toFixed(2)}`
+                : "Confirm Pre-Order & Issue Digital Token"}
+            </span>
           </button>
         </div>
       )}
+
+      {/* Demo in-app card payment confirmation */}
+      {showCardModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"
+          onClick={() => {
+            if (!isProcessing) setShowCardModal(false);
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-sm p-5 shadow-2xl flex flex-col gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[20px] text-orange-600">
+                  credit_card
+                </span>
+                <h3 className="font-bold text-slate-900 text-sm">
+                  Debit / Credit Card
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowCardModal(false)}
+                disabled={isProcessing}
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-500 flex items-center justify-center"
+                aria-label="Close payment"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            <div className="bg-slate-50 rounded-xl p-3 flex items-center justify-between border border-slate-100">
+              <span className="text-xs text-slate-500 font-medium">
+                Amount to pay
+              </span>
+              <span className="font-extrabold text-slate-900 text-base">
+                Rs. {cartTotal.toFixed(2)}
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Card Number
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={cardNumber}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "").slice(0, 16);
+                    setCardNumber(digits.replace(/(\d{4})(?=\d)/g, "$1 "));
+                    setCardError("");
+                  }}
+                  placeholder="0000 0000 0000 0000"
+                  disabled={isProcessing}
+                  className="bg-slate-50 text-slate-900 text-sm font-semibold tracking-wider rounded-xl px-3 py-2.5 border border-slate-200 outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    Expiry
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={cardExpiry}
+                    onChange={(e) => {
+                      let v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                      if (v.length > 2) v = `${v.slice(0, 2)}/${v.slice(2)}`;
+                      setCardExpiry(v);
+                      setCardError("");
+                    }}
+                    placeholder="MM/YY"
+                    disabled={isProcessing}
+                    className="bg-slate-50 text-slate-900 text-sm font-semibold rounded-xl px-3 py-2.5 border border-slate-200 outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    CVV
+                  </label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    value={cardCvv}
+                    onChange={(e) => {
+                      setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 6));
+                      setCardError("");
+                    }}
+                    placeholder="•••"
+                    disabled={isProcessing}
+                    className="bg-slate-50 text-slate-900 text-sm font-semibold rounded-xl px-3 py-2.5 border border-slate-200 outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {cardError && (
+              <p className="text-[11px] font-bold text-rose-500">{cardError}</p>
+            )}
+
+            <p className="text-[10px] text-slate-400 leading-relaxed">
+              Demo checkout for the campus canteen — card details stay in this
+              browser and no real money is charged.
+            </p>
+
+            <button
+              onClick={handleCardPay}
+              disabled={isProcessing}
+              className="w-full py-3 bg-orange-600 hover:bg-orange-500 disabled:opacity-70 text-white font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                {isProcessing ? "progress_activity" : "lock"}
+              </span>
+              <span>
+                {isProcessing
+                  ? "Authorizing Payment…"
+                  : `Pay Rs. ${cartTotal.toFixed(2)}`}
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Smart-card Add Money recharge */}
+      <SmartCardTopUpModal open={showTopUp} onClose={() => setShowTopUp(false)} />
     </div>
   );
 };

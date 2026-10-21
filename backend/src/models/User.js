@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const { ROLES, ACCOUNT_STATUS } = require('../config/constants');
+const { ROLES, ACCOUNT_STATUS, SMART_CARD_DEFAULT_BALANCE } = require('../config/constants');
 
 const userSchema = new mongoose.Schema(
   {
@@ -35,6 +35,11 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       default: ''
+    },
+    smart_card_balance: {
+      type: Number,
+      default: SMART_CARD_DEFAULT_BALANCE,
+      min: 0
     },
     preferences: {
       vegetarianOnly: { type: Boolean, default: false },

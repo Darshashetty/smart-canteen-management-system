@@ -126,7 +126,8 @@ const login = asyncHandler(async (req, res) => {
         email: user.email,
         role: user.role,
         account_status: user.account_status,
-        phone: user.phone
+        phone: user.phone,
+        smart_card_balance: user.smart_card_balance
       }
     });
   }
@@ -173,7 +174,8 @@ const login = asyncHandler(async (req, res) => {
       email: user.email,
       role: user.role,
       account_status: user.account_status,
-      phone: user.phone
+      phone: user.phone,
+      smart_card_balance: user.smart_card_balance
     }
   });
 });
@@ -182,9 +184,11 @@ const login = asyncHandler(async (req, res) => {
  * Get currently authenticated user profile
  */
 const getMe = asyncHandler(async (req, res) => {
+  const raw = req.user && typeof req.user.toObject === 'function' ? req.user.toObject() : req.user;
+  const { passwordHash, password, ...user } = raw || {};
   return res.json({
     message: 'User profile retrieved',
-    user: req.user
+    user
   });
 });
 
@@ -200,6 +204,56 @@ const getPreferences = asyncHandler(async (req, res) => {
     notifyOnDelay: true
   };
   return res.json({ data: { ...defaultPrefs, ...(req.user.preferences || {}) } });
+});
+
+/**
+ * Top up the signed-in customer's campus smart-card balance.
+ * Demo payment flow: no external gateway, money is credited instantly.
+ */
+const topUpSmartCard = asyncHandler(async (req, res) => {
+  const amount = Number(req.body.amount);
+
+  if (req.user.role !== ROLES.CUSTOMER) {
+    return res.status(403).json({
+      message: 'Only customer accounts have a campus smart card.',
+      details: null
+    });
+  }
+
+  const { creditSmartCardBalance, getSmartCardBalance } = require('../services/smartCardService');
+  const updated = await creditSmartCardBalance(req.user._id, amount);
+
+  if (!updated) {
+    return res.status(500).json({
+      message: 'Could not credit the smart card. Please try again.',
+      details: null
+    });
+  }
+
+  const balance = getSmartCardBalance(updated);
+
+  InMemoryStore.addLog({
+    userId: req.user._id,
+    userName: req.user.name,
+    role: req.user.role,
+    action: 'SMART_CARD_TOPUP',
+    details: { amount, balance }
+  });
+
+  if (mongoose.connection.readyState === 1) {
+    await SystemLog.create({
+      user_id: req.user._id,
+      user_name: req.user.name,
+      role: req.user.role,
+      action: 'SMART_CARD_TOPUP',
+      details: { amount, balance }
+    });
+  }
+
+  return res.json({
+    message: `Rs. ${amount.toFixed(2)} added to your smart card.`,
+    data: { smart_card_balance: balance, amount }
+  });
 });
 
 const updatePreferences = asyncHandler(async (req, res) => {
@@ -251,5 +305,6 @@ module.exports = {
   login,
   getMe,
   getPreferences,
-  updatePreferences
+  updatePreferences,
+  topUpSmartCard
 };

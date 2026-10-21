@@ -12,6 +12,40 @@ const isCollectedStatus = (status) =>
   status === ORDER_STATUS.COLLECTED || status === ORDER_STATUS.COMPLETED;
 
 /**
+ * Accepts every shape a scanner can hand us:
+ *   - JSON payload           {"token":"C-023","order_id":"ORD-..."}
+ *   - URL from a phone scan  http://localhost:3000/live-order?order=...&token=...
+ *   - bare order id          ORD-20261021-4963
+ * Returns { order_id?, token? } or null when nothing usable is found.
+ */
+const parseScannedPayload = (raw) => {
+  const text = String(raw).trim();
+
+  if (/^https?:\/\//i.test(text) || text.startsWith('/')) {
+    try {
+      const url = new URL(text, 'http://scanner.local');
+      const orderId = url.searchParams.get('order');
+      const token = url.searchParams.get('token');
+      if (orderId || token) {
+        return { order_id: orderId || undefined, token: token || undefined };
+      }
+    } catch {
+      /* not a URL after all — fall through */
+    }
+  }
+
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed && typeof parsed === 'object') return parsed;
+  } catch {
+    /* plain text identifiers are handled below */
+  }
+
+  if (/^ORD-/i.test(text)) return { order_id: text };
+  return null;
+};
+
+/**
  * Resolves the intended order from any scanner identifier.
  *
  * Root cause this solves: tokens are only unique *per day* (they reset daily
@@ -28,9 +62,9 @@ const resolveDbOrder = async ({ token_number, order_id, qr_payload }) => {
   let lookupToken = token_number;
 
   if (qr_payload) {
-    const parsed = JSON.parse(qr_payload);
-    if (parsed.order_id) lookupOrderId = parsed.order_id;
-    if (parsed.token) lookupToken = parsed.token;
+    const parsed = parseScannedPayload(qr_payload);
+    if (parsed?.order_id) lookupOrderId = parsed.order_id;
+    if (parsed?.token) lookupToken = parsed.token;
   }
 
   if (lookupOrderId) {
@@ -58,9 +92,9 @@ const resolveInMemoryOrder = ({ token_number, order_id, qr_payload }) => {
   let lookupToken = token_number;
 
   if (qr_payload) {
-    const parsed = JSON.parse(qr_payload);
-    if (parsed.order_id) lookupOrderId = parsed.order_id;
-    if (parsed.token) lookupToken = parsed.token;
+    const parsed = parseScannedPayload(qr_payload);
+    if (parsed?.order_id) lookupOrderId = parsed.order_id;
+    if (parsed?.token) lookupToken = parsed.token;
   }
 
   if (lookupOrderId) return InMemoryStore.getOrderById(lookupOrderId);

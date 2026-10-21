@@ -43,6 +43,19 @@ const PAYMENT_STATUS = {
   REFUNDED: 'Refunded'
 };
 
+const PAYMENT_METHODS = {
+  SMART_CARD: 'smart_card',
+  CASH_ON_COUNTER: 'cash_on_counter',
+  ONLINE: 'online'
+};
+
+// Online payment methods settled instantly as Paid when the order is placed
+// (no external payment gateway).
+const ONLINE_PAYMENT_METHODS = ['card', 'online'];
+
+// Starting balance credited to every smart card account (in rupees).
+const SMART_CARD_DEFAULT_BALANCE = 1000;
+
 const NOTIFICATION_TYPES = {
   ORDER_ACCEPTED: 'ORDER_ACCEPTED',
   ORDER_PREPARING: 'ORDER_PREPARING',
@@ -81,6 +94,9 @@ module.exports = {
   MENU_ITEM_STATUS,
   ORDER_STATUS,
   PAYMENT_STATUS,
+  PAYMENT_METHODS,
+  ONLINE_PAYMENT_METHODS,
+  SMART_CARD_DEFAULT_BALANCE,
   NOTIFICATION_TYPES,
   DEFAULT_SETTINGS,
   STATUS_TRANSITIONS

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { ORDER_STATUS, PAYMENT_STATUS } = require('../config/constants');
+const { ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHODS } = require('../config/constants');
 
 const orderItemSchema = new mongoose.Schema(
   {
@@ -107,6 +107,11 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: Object.values(PAYMENT_STATUS),
       default: PAYMENT_STATUS.PENDING
+    },
+    payment_method: {
+      type: String,
+      enum: [...Object.values(PAYMENT_METHODS), 'card'],
+      default: PAYMENT_METHODS.CASH_ON_COUNTER
     },
     cancellation_reason: {
       type: String,
