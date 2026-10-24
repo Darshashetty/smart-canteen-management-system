@@ -696,8 +696,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = useCallback(() => {
     setToken(null);
     setIsAuthenticated(false);
-    showToast("Logged out of Smart Canteen session");
-  }, [showToast]);
+    setCurrentUser({
+      id: "",
+      name: "Guest Customer",
+      email: "",
+      role: "customer",
+    });
+    setRoleState("customer");
+    setCart([]);
+    setOrders([]);
+    setToastMessage("Logged out of Smart Canteen session");
+    setTimeout(() => setToastMessage(null), 4000);
+  }, []);
 
   // ─── Menu CRUD (connected to backend) ─────────────────
   const saveMenuItem = useCallback(

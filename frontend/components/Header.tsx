@@ -340,19 +340,19 @@ export const Header: React.FC = () => {
                     </div>
 
                     <div className="pt-2 mt-2 border-t border-slate-100 px-2">
-                      <Link
-                        href="/login"
+                      <button
+                        type="button"
                         onClick={() => {
                           logout();
                           setRoleMenuOpen(false);
                         }}
                         className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center justify-between"
                       >
-                        <span>Sign In / Switch Login</span>
+                        <span>Sign Out / Log Out</span>
                         <span className="material-symbols-outlined text-[16px]">
-                          login
+                          logout
                         </span>
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 )}

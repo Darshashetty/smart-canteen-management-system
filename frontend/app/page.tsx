@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Header } from "../components/Header";
 import { CustomerHome } from "../components/CustomerHome";
 import { useApp } from "./context/AppContext";
@@ -10,12 +11,16 @@ const LoginPromptButton: React.FC<{ children: React.ReactNode; className: string
   className,
 }) => {
   const { isAuthenticated, showToast } = useApp();
+  const router = useRouter();
 
   if (isAuthenticated) {
     return (
-      <Link href="/menu" className={className}>
+      <button
+        onClick={() => router.push("/menu")}
+        className={className}
+      >
         {children}
-      </Link>
+      </button>
     );
   }
 
