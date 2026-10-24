@@ -188,7 +188,7 @@ const featureChips = [
 /* ──────────── Component ──────────── */
 
 export default function LandingPage() {
-  const { isAuthenticated, role } = useApp();
+  const { isAuthenticated, role, toastMessage } = useApp();
 
   if (isAuthenticated && role === "customer") {
     return (
@@ -767,6 +767,16 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* Global Floating Toast Alert (guest view) */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-4 left-4 sm:left-auto z-[60] bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 max-w-md sm:ml-auto anim-fade-in-up">
+          <span className="material-symbols-outlined text-orange-400 text-[20px] shrink-0">
+            info
+          </span>
+          <span className="text-xs font-medium">{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }
