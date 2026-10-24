@@ -13,22 +13,25 @@ const LoginPromptButton: React.FC<{ children: React.ReactNode; className: string
   const { isAuthenticated, showToast } = useApp();
   const router = useRouter();
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isAuthenticated) {
+      router.push("/menu");
+    } else {
+      showToast("Please log in or create an account to place an order.");
+    }
+  };
+
   if (isAuthenticated) {
     return (
-      <button
-        onClick={() => router.push("/menu")}
-        className={className}
-      >
+      <button type="button" onClick={handleClick} className={className}>
         {children}
       </button>
     );
   }
 
   return (
-    <button
-      onClick={() => showToast("Please log in or create an account to place an order.")}
-      className={className}
-    >
+    <button type="button" onClick={handleClick} className={className}>
       {children}
     </button>
   );
@@ -292,17 +295,17 @@ export default function LandingPage() {
 
                   {/* CTAs */}
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-2">
-              <LoginPromptButton
-                className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl bg-status-limited-solid text-on-primary text-sm sm:text-base font-semibold shadow-md hover:bg-primary-container transition-all active:scale-[0.98] min-h-[48px] sm:min-h-[52px]"
-              >
-                <span className="material-symbols-outlined text-[20px]">
-                  restaurant
-                </span>
-                <span>Pre-Order Your Meal</span>
-                <span className="material-symbols-outlined text-[18px]">
-                  arrow_forward
-                </span>
-              </LoginPromptButton>
+            <LoginPromptButton
+              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl bg-status-limited-solid text-on-primary text-sm sm:text-base font-semibold shadow-md hover:bg-primary-container transition-all active:scale-[0.98] min-h-[48px] sm:min-h-[52px]"
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                restaurant
+              </span>
+              <span>Pre-Order Your Meal</span>
+              <span className="material-symbols-outlined text-[18px]">
+                arrow_forward
+              </span>
+            </LoginPromptButton>
                     <a
                       href="#pulse-widget"
                       className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl bg-surface text-text-primary text-sm sm:text-base font-semibold shadow-sm hover:bg-surface-container transition-all min-h-[48px] sm:min-h-[52px]"
