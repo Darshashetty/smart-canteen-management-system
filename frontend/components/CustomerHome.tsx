@@ -9,7 +9,7 @@ import { aiAPI } from "../app/lib/api";
 const FALLBACK_MENU_IMAGE = "/menu-fallback.svg";
 
 export const CustomerHome: React.FC = () => {
-  const { menu, addToCart, cartCount, cartTotal, preferences, isAuthenticated } = useApp();
+  const { menu, addToCart, cartCount, cartTotal, preferences, isAuthenticated, showToast } = useApp();
   const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -287,7 +287,13 @@ export const CustomerHome: React.FC = () => {
                     <p className="text-[11px] text-slate-300">Rs. {item.price.toFixed(0)}</p>
                   </div>
                   <button
-                    onClick={() => addToCart(item)}
+                    onClick={() => {
+                      if (!isAuthenticated) {
+                        showToast("Please log in or create an account to place an order.");
+                        return;
+                      }
+                      addToCart(item);
+                    }}
                     className="w-full py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-[11px] font-bold flex items-center justify-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[14px]">add</span>
@@ -397,7 +403,13 @@ export const CustomerHome: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={() => addToCart(item)}
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      showToast("Please log in or create an account to place an order.");
+                      return;
+                    }
+                    addToCart(item);
+                  }}
                   disabled={item.status === "Sold Out"}
                   className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
                     item.status === "Sold Out"
