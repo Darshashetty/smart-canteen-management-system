@@ -16,6 +16,8 @@ export const Header: React.FC = () => {
     currentUser,
     logout,
     isAuthenticated,
+    setRole,
+    showToast,
   } = useApp();
 
   const pathname = usePathname();
@@ -271,6 +273,70 @@ export const Header: React.FC = () => {
 
                     <div className="px-4 py-3 text-xs font-semibold text-slate-600">
                       Signed in as {roleLabels[role].title}
+                    </div>
+
+                    <div className="px-2 pb-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await setRole("customer");
+                            setRoleMenuOpen(false);
+                            showToast("Switched to Customer view");
+                          } catch {
+                            showToast("Failed to switch role");
+                          }
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">person</span>
+                        <span>Switch to Customer</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await setRole("kitchen");
+                            setRoleMenuOpen(false);
+                          } catch {
+                            showToast("Failed to switch role");
+                          }
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">soup_kitchen</span>
+                        <span>Switch to Kitchen/Staff</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await setRole("manager");
+                            setRoleMenuOpen(false);
+                          } catch {
+                            showToast("Failed to switch role");
+                          }
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">query_stats</span>
+                        <span>Switch to Manager</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await setRole("admin");
+                            setRoleMenuOpen(false);
+                          } catch {
+                            showToast("Failed to switch role");
+                          }
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 rounded-xl flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">admin_panel_settings</span>
+                        <span>Switch to Admin</span>
+                      </button>
                     </div>
 
                     <div className="pt-2 mt-2 border-t border-slate-100 px-2">
