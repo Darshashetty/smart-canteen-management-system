@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 import { SmartCardTopUpModal } from "./SmartCardTopUpModal";
+import { getMenuImage } from "../app/lib/image";
 
 const FALLBACK_MENU_IMAGE = "/menu-fallback.svg";
 
@@ -196,16 +197,9 @@ export const CartCheckout: React.FC = () => {
             >
               <div className="flex items-center gap-4">
                 <img
-                  src={menuItem.image || FALLBACK_MENU_IMAGE}
+                  src={getMenuImage(menuItem.image, menuItem.category, menuItem.name)}
                   alt={menuItem.name}
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    if (target.src !== FALLBACK_MENU_IMAGE) {
-                      target.src = FALLBACK_MENU_IMAGE;
-                    }
-                  }}
-                  className="w-20 h-20 rounded-xl object-cover bg-slate-100 shrink-0"
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-slate-100"
                 />
 
                 <div className="flex flex-col flex-1 min-w-0">

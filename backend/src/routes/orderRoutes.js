@@ -7,6 +7,8 @@ const {
   cancelOrder,
   getPickupSlots,
   clearPickupSlot,
+  deallocatePickupSlot,
+  resetPickupSlots,
   reorderPastOrder,
   updatePaymentStatus,
   updateOrderPickupTime,
@@ -32,6 +34,23 @@ router.post(
   authenticate,
   authorize(ROLES.STAFF, ROLES.MANAGER, ROLES.ADMIN),
   clearPickupSlot
+);
+
+// Explicit slot deallocation (staff/manager/admin): releases reserved
+// capacity once no active order depends on the slot.
+router.post(
+  '/pickup-slots/deallocate',
+  authenticate,
+  authorize(ROLES.STAFF, ROLES.MANAGER, ROLES.ADMIN),
+  deallocatePickupSlot
+);
+
+// Force-reset all pickup-slot reservations for a day (demo/recovery).
+router.post(
+  '/pickup-slots/reset',
+  authenticate,
+  authorize(ROLES.STAFF, ROLES.MANAGER, ROLES.ADMIN),
+  resetPickupSlots
 );
 
 // Place Pre-Order (Criterion A5: Zod validation)

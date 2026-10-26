@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { useApp } from "../app/context/AppContext";
 import { MenuItem } from "../app/types";
 import { aiAPI } from "../app/lib/api";
+import { getMenuImage } from "../app/lib/image";
 
 const FALLBACK_MENU_IMAGE = "/menu-fallback.svg";
 
 export const CustomerHome: React.FC = () => {
-  const { menu, addToCart, cartCount, cartTotal, preferences, isAuthenticated, showToast } = useApp();
+  const { menu, addToCart, cartCount, cartTotal, preferences, isAuthenticated, promptLogin } = useApp();
   const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -181,7 +182,7 @@ export const CustomerHome: React.FC = () => {
             }
             className={`inline-flex items-center gap-1 h-8 px-3.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
               activeFilter === "veg"
-                ? "bg-emerald-600 text-white shadow-sm"
+                ? "bg-orange-600 text-white shadow-sm"
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
           >
@@ -193,7 +194,7 @@ export const CustomerHome: React.FC = () => {
             }
             className={`inline-flex items-center gap-1 h-8 px-3.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
               activeFilter === "cheap"
-                ? "bg-blue-600 text-white shadow-sm"
+                ? "bg-orange-600 text-white shadow-sm"
                 : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             }`}
           >
@@ -277,10 +278,9 @@ export const CustomerHome: React.FC = () => {
               {recommendedMenu.slice(0, 4).map((item) => (
                 <div key={`recommendation-${item.id}`} className="bg-white/10 rounded-xl p-2.5 flex flex-col gap-2">
                   <img
-                    src={item.image || FALLBACK_MENU_IMAGE}
+                    src={getMenuImage(item.image, item.category, item.name)}
                     alt={item.name}
                     className="w-full aspect-4/3 object-cover rounded-lg"
-                    onError={(event) => { event.currentTarget.src = FALLBACK_MENU_IMAGE; }}
                   />
                   <div className="min-w-0">
                     <p className="text-xs font-bold truncate">{item.name}</p>
@@ -289,7 +289,7 @@ export const CustomerHome: React.FC = () => {
                   <button
                     onClick={() => {
                       if (!isAuthenticated) {
-                        showToast("Please log in or create an account to place an order.");
+                        promptLogin("Please log in or create an account to place an order.");
                         return;
                       }
                       addToCart(item);
@@ -334,15 +334,9 @@ export const CustomerHome: React.FC = () => {
               {/* Top Item Badges */}
               <div className="relative w-full h-44 rounded-xl overflow-hidden mb-3 bg-slate-100">
                 <img
-                  src={item.image || FALLBACK_MENU_IMAGE}
+                  src={getMenuImage(item.image, item.category, item.name)}
                   alt={item.name}
                   loading="lazy"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    if (target.src !== FALLBACK_MENU_IMAGE) {
-                      target.src = FALLBACK_MENU_IMAGE;
-                    }
-                  }}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 <div className="absolute top-2 left-2 flex flex-col gap-1">
@@ -405,7 +399,7 @@ export const CustomerHome: React.FC = () => {
                 <button
                   onClick={() => {
                     if (!isAuthenticated) {
-                      showToast("Please log in or create an account to place an order.");
+                      promptLogin("Please log in or create an account to place an order.");
                       return;
                     }
                     addToCart(item);

@@ -26,15 +26,23 @@ const canteenSettingSchema = new mongoose.Schema(
     },
     kitchen_capacity: {
       type: Number,
-      default: DEFAULT_SETTINGS.kitchenCapacity
+      default: DEFAULT_SETTINGS.kitchen_capacity
+    },
+    auto_delay_grace_minutes: {
+      type: Number,
+      default: DEFAULT_SETTINGS.auto_delay_grace_minutes
+    },
+    uncollected_timeout_minutes: {
+      type: Number,
+      default: DEFAULT_SETTINGS.uncollected_timeout_minutes
     },
     opening_time: {
       type: String,
-      default: '12:00'
+      default: DEFAULT_SETTINGS.opening_time
     },
     closing_time: {
       type: String,
-      default: '21:00'
+      default: DEFAULT_SETTINGS.closing_time
     },
     categories: {
       type: [String],

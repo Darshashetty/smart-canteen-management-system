@@ -385,7 +385,7 @@ export const AdminDashboard: React.FC = () => {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <span className="text-slate-400 font-semibold shrink-0">
-                    [{new Date(log.created_at || Date.now()).toLocaleTimeString()}]
+                    [{new Date(log.created_at || 0).toLocaleTimeString()}]
                   </span>
                   <span className="font-bold text-slate-900 shrink-0">
                     {log.user_name || log.user || "System"}:

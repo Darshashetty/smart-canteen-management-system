@@ -324,7 +324,7 @@ export const LiveOrderTracker: React.FC = () => {
                 </span>
                 {item.specialInstruction && (
                   <span className="text-slate-400 text-[11px] italic">
-                    Note: "{item.specialInstruction}"
+                    Note: &quot;{item.specialInstruction}&quot;
                   </span>
                 )}
               </div>

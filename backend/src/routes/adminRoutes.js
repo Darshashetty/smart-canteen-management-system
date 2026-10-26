@@ -6,6 +6,7 @@ const {
   getSystemLogs,
   getCanteenSettings,
   updateCanteenSettings,
+  reconcileSlots,
   getAllCategories,
   createCategory,
   updateCategory,
@@ -41,6 +42,14 @@ router.put(
   authorize(ROLES.MANAGER, ROLES.ADMIN),
   validate(canteenSettingsSchema),
   updateCanteenSettings
+);
+
+// Recompute slot reservations from live orders (manager/admin only)
+router.post(
+  '/slots/reconcile',
+  authenticate,
+  authorize(ROLES.MANAGER, ROLES.ADMIN),
+  reconcileSlots
 );
 
 // Admin-only user management (Criterion A5: ObjectId validation)

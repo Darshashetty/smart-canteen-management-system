@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppProvider } from "./context/AppContext";
 import { AuthGate } from "../components/AuthGate";
+import { LoginPromptModal } from "../components/LoginPromptModal";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -37,6 +38,7 @@ export default function RootLayout({
       <body className="min-h-full bg-[#f8f9ff] text-[#0b1c30] flex flex-col font-sans">
         <AppProvider>
           <AuthGate>{children}</AuthGate>
+          <LoginPromptModal />
         </AppProvider>
       </body>
     </html>

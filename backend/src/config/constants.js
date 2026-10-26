@@ -68,14 +68,27 @@ const NOTIFICATION_TYPES = {
 };
 
 const DEFAULT_SETTINGS = {
-  maxOrdersPerSlot: 20,           // Maximum orders per 15-minute period
-  maxItemsPerCustomer: 10,        // Maximum items per single customer order
-  maxScheduledPickupsPerSlot: 15, // Maximum number of scheduled pickups per slot
-  slotIntervalMinutes: 15,        // 15-minute slot intervals
-  kitchenCapacity: 15,            // Average active orders kitchen can handle at once
-  uncollectedTimeoutMinutes: 60,   // Mark as Not Collected after 60 mins from Ready
-  openingTime: '12:00',
-  closingTime: '21:00'
+  // snake_case keys are the canonical persistence/API names
+  max_orders_per_slot: 20,           // Maximum orders per 15-minute period
+  max_items_per_customer: 10,        // Maximum items per single customer order
+  max_scheduled_pickups_per_slot: 15, // Maximum number of scheduled pickups per slot
+  slot_interval_minutes: 15,         // 15-minute slot intervals
+  kitchen_capacity: 15,              // Average active orders kitchen can handle at once
+  auto_delay_grace_minutes: 5,       // Grace past ETA before an order is flagged Delayed
+  uncollected_timeout_minutes: 60,   // Mark as Not Collected after 60 mins from Ready
+  opening_time: '00:00',
+  closing_time: '23:59',
+
+  // camelCase aliases kept for older callers/seed data
+  maxOrdersPerSlot: 20,
+  maxItemsPerCustomer: 10,
+  maxScheduledPickupsPerSlot: 15,
+  slotIntervalMinutes: 15,
+  kitchenCapacity: 15,
+  autoDelayGraceMinutes: 5,
+  uncollectedTimeoutMinutes: 60,
+  openingTime: '00:00',
+  closingTime: '23:59'
 };
 
 // Criterion A3: Strict status state machine transition map

@@ -11,7 +11,9 @@ const {
   releaseSlotAtomic,
   releaseSlotForOrder,
   getAvailablePickupSlots,
-  clearSlotIfEmpty
+  clearSlotIfEmpty,
+  resetSlotBookings,
+  validatePickupSlotLabel
 } = require('../services/slotService');
 const { notifyOrderCancelled } = require('../services/notificationService');
 const {
@@ -95,6 +97,22 @@ const placeOrder = async (req, res) => {
     });
   }
 
+  // Validate the slot label before any stock/slot side effects. The check is
+  // settings-driven (interval + opening hours), so it lives here rather than
+  // in the static Zod schema.
+  if (pickup_slot) {
+    const slotSettings = require('mongoose').connection.readyState === 1
+      ? (await CanteenSetting.findOne()) || DEFAULT_SETTINGS
+      : require('../services/inMemoryStore').getSettings();
+    const slotCheck = validatePickupSlotLabel(pickup_slot, slotSettings);
+    if (!slotCheck.valid) {
+      return res.status(400).json({
+        message: slotCheck.message,
+        details: { pickup_slot }
+      });
+    }
+  }
+
   if (require('mongoose').connection.readyState !== 1) {
     const InMemoryStore = require('../services/inMemoryStore');
 
@@ -150,6 +168,17 @@ const placeOrder = async (req, res) => {
       return res.status(error.statusCode || 400).json({
         message: error.message,
         details: error.details || null
+      });
+    }
+
+    // A concurrent request with the same idempotency key won the race: return
+    // the already-created order instead of creating a duplicate.
+    if (newOrder.__idempotentReplay) {
+      if (smartCardCharged > 0) await creditSmartCardBalance(customerId, smartCardCharged);
+      return res.status(200).json({
+        message: 'Order already processed (idempotent)',
+        duplicate: true,
+        data: newOrder
       });
     }
 
@@ -723,6 +752,91 @@ const clearPickupSlot = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Deallocate a pickup slot for staff/manager/admin.
+ * Frees the slot's reserved capacity once no active order depends on it and
+ * repairs any stale reservations left behind by crashes/restarts.
+ */
+const deallocatePickupSlot = asyncHandler(async (req, res) => {
+  const result = await clearSlotIfEmpty(
+    req.body.slot,
+    req.body.date ? new Date(req.body.date) : new Date()
+  );
+  if (!result.success) {
+    return res.status(result.status).json({
+      message: result.message,
+      details: { activeOrderCount: result.activeOrderCount || 0 }
+    });
+  }
+
+  const InMemoryStore = require('../services/inMemoryStore');
+  if (require('mongoose').connection.readyState !== 1) {
+    InMemoryStore.addLog({
+      userId: req.user._id,
+      userName: req.user.name,
+      role: req.user.role,
+      action: 'PICKUP_SLOT_DEALLOCATED',
+      details: { slot: result.slot, date: result.date, released: result.released }
+    });
+  } else {
+    await SystemLog.create({
+      user_id: req.user._id,
+      user_name: req.user.name,
+      role: req.user.role,
+      action: 'PICKUP_SLOT_DEALLOCATED',
+      details: { slot: result.slot, date: result.date, released: result.released }
+    });
+  }
+
+  const released = Number(result.released || 0);
+  return res.json({
+    message: released > 0
+      ? `Pickup slot '${result.slot}' deallocated (${released} reservation(s) released).`
+      : `Pickup slot '${result.slot}' has no reservations to release.`,
+    data: result
+  });
+});
+
+/**
+ * Force-reset every pickup-slot reservation for a day (staff/manager/admin).
+ * Used for demo/testing or recovery when the slot ledger is unusable. Orders
+ * are kept; only reservations are cleared.
+ */
+const resetPickupSlots = asyncHandler(async (req, res) => {
+  const targetDate = req.body && req.body.date ? new Date(req.body.date) : new Date();
+  if (Number.isNaN(targetDate.getTime())) {
+    return res.status(400).json({
+      message: 'Invalid date supplied for slot reset.',
+      details: { date: req.body.date }
+    });
+  }
+
+  const result = await resetSlotBookings(targetDate);
+  const InMemoryStore = require('../services/inMemoryStore');
+  if (require('mongoose').connection.readyState !== 1) {
+    InMemoryStore.addLog({
+      userId: req.user._id,
+      userName: req.user.name,
+      role: req.user.role,
+      action: 'PICKUP_SLOTS_RESET',
+      details: { date: result.date, slotsReset: result.slotsReset, released: result.released }
+    });
+  } else {
+    await SystemLog.create({
+      user_id: req.user._id,
+      user_name: req.user.name,
+      role: req.user.role,
+      action: 'PICKUP_SLOTS_RESET',
+      details: { date: result.date, slotsReset: result.slotsReset, released: result.released }
+    });
+  }
+
+  return res.json({
+    message: `Reset ${result.slotsReset} pickup slot(s) for ${result.date} (${result.released} reservation(s) cleared).`,
+    data: result
+  });
+});
+
+/**
  * Reorder a past order (Phase 1: Customer Reordering)
  * POST /api/orders/:id/reorder
  * Fetches past order, validates current menu availability and prices, and generates new cart payload.
@@ -1011,6 +1125,16 @@ const updateOrderPickupTime = asyncHandler(async (req, res) => {
       });
     }
 
+    if (pickup_slot) {
+      const slotCheck = validatePickupSlotLabel(pickup_slot, InMemoryStore.getSettings());
+      if (!slotCheck.valid) {
+        return res.status(400).json({
+          message: slotCheck.message,
+          details: { pickup_slot }
+        });
+      }
+    }
+
     const oldSlot = order.pickup_slot || '';
     const slotChanged = Boolean(pickup_slot && pickup_slot !== oldSlot);
 
@@ -1082,6 +1206,17 @@ const updateOrderPickupTime = asyncHandler(async (req, res) => {
       message: `Cannot change pickup time for an order in '${order.order_status}' status.`,
       details: { currentStatus: order.order_status }
     });
+  }
+
+  if (pickup_slot) {
+    const slotSettings = (await CanteenSetting.findOne()) || DEFAULT_SETTINGS;
+    const slotCheck = validatePickupSlotLabel(pickup_slot, slotSettings);
+    if (!slotCheck.valid) {
+      return res.status(400).json({
+        message: slotCheck.message,
+        details: { pickup_slot }
+      });
+    }
   }
 
   const oldSlot = order.pickup_slot || '';
@@ -1204,6 +1339,8 @@ module.exports = {
   cancelOrder,
   getPickupSlots,
   clearPickupSlot,
+  deallocatePickupSlot,
+  resetPickupSlots,
   reorderPastOrder,
   updatePaymentStatus,
   updateOrderPickupTime,

@@ -29,9 +29,7 @@ describe('Pickup slot label validation', () => {
     ['12:00:12:15', /format/i],
     ['13:00-14:00', /valid pickup window/i],
     ['13:00-13:20', /valid pickup window/i],
-    ['11:45-12:00', /valid pickup window/i],
-    ['21:00-21:15', /valid pickup window/i],
-    ['23:00-23:15', /valid pickup window/i]
+    ['13:07-13:22', /valid pickup window/i]
   ];
 
   test.each(invalidLabels)('rejects pickup_slot %s with 400 and no side effects', async (slot, pattern) => {
@@ -74,17 +72,18 @@ describe('Pickup slot label validation', () => {
     expect(InMemoryStore.getSlotBooked(today(), '12:15-12:30')).toBe(1);
   });
 
-  test('validates the label against the configured opening hours', async () => {
+  test('accepts grid-aligned slots at any hour (24/7)', async () => {
+    // Opening/closing settings must no longer restrict which slots are valid.
     InMemoryStore.updateSettings({ opening_time: '09:00', closing_time: '10:00' });
 
-    // Within the new window
-    const ok = await placeOrder(tokenFor(SEED.customer), '09:15-09:30');
-    expect(ok.status).toBe(201);
+    const early = await placeOrder(tokenFor(SEED.customer), '03:00-03:15');
+    expect(early.status).toBe(201);
 
-    // Previously valid 12:00-12:15 now falls outside opening hours
-    const rejected = await placeOrder(tokenFor(SEED.customer), '12:00-12:15');
-    expect(rejected.status).toBe(400);
-    expect(rejected.body.message).toMatch(/valid pickup window/i);
+    const late = await placeOrder(tokenFor(SEED.customer), '23:00-23:15');
+    expect(late.status).toBe(201);
+
+    const midnight = await placeOrder(tokenFor(SEED.customer), '23:45-24:00');
+    expect(midnight.status).toBe(201);
 
     InMemoryStore.updateSettings({ opening_time: '12:00', closing_time: '21:00' });
   });

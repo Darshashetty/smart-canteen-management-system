@@ -144,8 +144,11 @@ const updateStockAvailabilitySchema = z.object({
 const canteenSettingsSchema = z.object({
   max_orders_per_slot: z.number().int().min(1).max(200).optional(),
   max_items_per_customer: z.number().int().min(1).max(50).optional(),
+  max_scheduled_pickups_per_slot: z.number().int().min(1).max(200).optional(),
   kitchen_capacity: z.number().int().min(1).max(100).optional(),
   slot_interval_minutes: z.number().int().min(5).max(60).optional(),
+  auto_delay_grace_minutes: z.number().int().min(0).max(120).optional(),
+  uncollected_timeout_minutes: z.number().int().min(1).max(1440).optional(),
   opening_time: z.string().optional(),
   closing_time: z.string().optional(),
   categories: z.array(z.string()).optional()

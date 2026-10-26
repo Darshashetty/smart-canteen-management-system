@@ -2,14 +2,28 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "../app/context/AppContext";
-import { OrderStatus } from "../app/types";
-import { collectionAPI, orderAPI } from "../app/lib/api";
+import { collectionAPI, orderAPI, type BackendOrder } from "../app/lib/api";
 
 type ScannerStatus = "idle" | "starting" | "scanning" | "error";
 
-const getBarcodeDetector = (): any => {
+interface DetectedBarcode {
+  rawValue: string;
+}
+
+interface BarcodeDetectorLike {
+  detect(source: CanvasImageSource): Promise<DetectedBarcode[]>;
+}
+
+type BarcodeDetectorConstructor = new (options?: {
+  formats?: string[];
+}) => BarcodeDetectorLike;
+
+const getBarcodeDetector = (): BarcodeDetectorConstructor | null => {
   if (typeof window === "undefined") return null;
-  return (window as any).BarcodeDetector || null;
+  const w = window as unknown as {
+    BarcodeDetector?: BarcodeDetectorConstructor;
+  };
+  return w.BarcodeDetector || null;
 };
 
 export const KitchenDashboard: React.FC = () => {
@@ -34,19 +48,22 @@ export const KitchenDashboard: React.FC = () => {
   const [verificationResult, setVerificationResult] = useState<{
     success: boolean;
     message: string;
-    order?: any;
+    order?: BackendOrder;
   } | null>(null);
   const [pendingCollection, setPendingCollection] = useState<{
     confirmation: { token_number?: string; order_id?: string };
-    order: any;
+    order: BackendOrder;
   } | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const detectorRef = useRef<any>(null);
+  const detectorRef = useRef<BarcodeDetectorLike | null>(null);
   const scanRafRef = useRef<number | null>(null);
   const lastDecodedRef = useRef<string>("");
   const lastDecodedAtRef = useRef<number>(0);
+  const performVerificationRef = useRef<(value: string) => Promise<void>>(
+    async () => {}
+  );
 
   const stopCamera = useCallback(() => {
     if (scanRafRef.current !== null) {
@@ -85,13 +102,32 @@ export const KitchenDashboard: React.FC = () => {
     }
   };
 
-  const clearPickupSlot = async (slot: string) => {
+  const deallocatePickupSlot = async (slot: string) => {
     try {
-      await orderAPI.clearPickupSlot(slot);
-      showToast(`✅ Slot ${slot} is empty and available again.`);
+      const result = await orderAPI.deallocateSlot(slot);
+      showToast(`✅ ${result.message}`);
       await refreshSlots();
     } catch (error) {
-      showToast(`⚠️ ${error instanceof Error ? error.message : "Slot could not be cleared."}`);
+      showToast(
+        `⚠️ ${error instanceof Error ? error.message : "Slot could not be deallocated."}`
+      );
+    }
+  };
+
+  const resetPickupSlots = async () => {
+    const confirmed = window.confirm(
+      "Reset all pickup-slot reservations for today? Active orders are kept, but their reserved capacity is cleared."
+    );
+    if (!confirmed) return;
+
+    try {
+      const result = await orderAPI.resetPickupSlots();
+      showToast(`✅ ${result.message}`);
+      await refreshSlots();
+    } catch (error) {
+      showToast(
+        `⚠️ ${error instanceof Error ? error.message : "Slots could not be reset."}`
+      );
     }
   };
 
@@ -160,9 +196,10 @@ export const KitchenDashboard: React.FC = () => {
         order: verification.data,
       });
       setScanTokenInput("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       const message =
-        err?.message || "Could not verify this order. Check the token or QR code and try again.";
+        (err instanceof Error ? err.message : "") ||
+        "Could not verify this order. Check the token or QR code and try again.";
       stopCamera();
       setScannerStatus("idle");
       setPendingCollection(null);
@@ -171,6 +208,11 @@ export const KitchenDashboard: React.FC = () => {
     }
     setScanTokenInput("");
   };
+
+  // Keep a stable handle to the latest performVerification for the camera loop.
+  useEffect(() => {
+    performVerificationRef.current = performVerification;
+  });
 
   const confirmPendingCollection = async () => {
     if (!pendingCollection) return;
@@ -198,37 +240,41 @@ export const KitchenDashboard: React.FC = () => {
   };
 
   const scanLoop = useCallback(() => {
-    const video = videoRef.current;
-    const detector = detectorRef.current;
-    if (!video || !detector || video.readyState < 2) {
-      scanRafRef.current = requestAnimationFrame(scanLoop);
-      return;
-    }
+    const step = () => {
+      const video = videoRef.current;
+      const detector = detectorRef.current;
+      if (!video || !detector || video.readyState < 2) {
+        scanRafRef.current = requestAnimationFrame(step);
+        return;
+      }
 
-    detector
-      .detect(video)
-      .then((codes: any[]) => {
-        if (!codes || codes.length === 0) return;
-        const rawValue = String(codes[0]?.rawValue || "").trim();
-        if (!rawValue) return;
+      detector
+        .detect(video)
+        .then((codes: DetectedBarcode[]) => {
+          if (!codes || codes.length === 0) return;
+          const rawValue = String(codes[0]?.rawValue || "").trim();
+          if (!rawValue) return;
 
-        const now = Date.now();
-        // Debounce: ignore identical reads within 3s to avoid duplicate submits
-        // while the QR stays in frame during verification.
-        if (rawValue === lastDecodedRef.current && now - lastDecodedAtRef.current < 3000) {
-          return;
-        }
-        lastDecodedRef.current = rawValue;
-        lastDecodedAtRef.current = now;
+          const now = Date.now();
+          // Debounce: ignore identical reads within 3s to avoid duplicate submits
+          // while the QR stays in frame during verification.
+          if (rawValue === lastDecodedRef.current && now - lastDecodedAtRef.current < 3000) {
+            return;
+          }
+          lastDecodedRef.current = rawValue;
+          lastDecodedAtRef.current = now;
 
-        performVerification(rawValue);
-      })
-      .catch(() => {
-        // Transient decode failures are expected between frames; keep scanning.
-      })
-      .finally(() => {
-        scanRafRef.current = requestAnimationFrame(scanLoop);
-      });
+          performVerificationRef.current(rawValue);
+        })
+        .catch(() => {
+          // Transient decode failures are expected between frames; keep scanning.
+        })
+        .finally(() => {
+          scanRafRef.current = requestAnimationFrame(step);
+        });
+    };
+
+    step();
   }, []);
 
   const startCamera = useCallback(
@@ -282,10 +328,10 @@ export const KitchenDashboard: React.FC = () => {
         if (settings?.deviceId) setActiveCameraId(settings.deviceId);
 
         scanRafRef.current = requestAnimationFrame(scanLoop);
-      } catch (err: any) {
+      } catch (err: unknown) {
         stopCamera();
         setScannerStatus("error");
-        const name = err?.name || "";
+        const name = err instanceof Error ? err.name : "";
         if (name === "NotAllowedError" || name === "SecurityError") {
           setScannerError(
             "Camera permission was blocked. Allow camera access in the browser, then try again."
@@ -294,7 +340,8 @@ export const KitchenDashboard: React.FC = () => {
           setScannerError("No camera was found on this device. Use manual entry below.");
         } else {
           setScannerError(
-            err?.message || "Could not start the camera. Use manual entry below."
+            (err instanceof Error ? err.message : "") ||
+              "Could not start the camera. Use manual entry below."
           );
         }
       }
@@ -603,15 +650,27 @@ export const KitchenDashboard: React.FC = () => {
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
             <h2 className="text-base font-extrabold text-slate-900">Today&apos;s Pickup Slots</h2>
-            <p className="text-xs text-slate-500">Completed orders free capacity automatically.</p>
+            <p className="text-xs text-slate-500">
+              Completed orders free capacity automatically. Deallocate releases stale
+              reservations once no active order depends on the slot.
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={refreshPickupSlots}
-            className="px-3 py-2 rounded-lg bg-slate-100 text-xs font-bold text-slate-700 hover:bg-slate-200"
-          >
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={resetPickupSlots}
+              className="px-3 py-2 rounded-lg bg-orange-600 text-xs font-bold text-white hover:bg-orange-500"
+            >
+              Reset All Slots
+            </button>
+            <button
+              type="button"
+              onClick={refreshPickupSlots}
+              className="px-3 py-2 rounded-lg bg-slate-100 text-xs font-bold text-slate-700 hover:bg-slate-200"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {pickupSlots.map((slot) => (
@@ -627,11 +686,12 @@ export const KitchenDashboard: React.FC = () => {
               </div>
               <button
                 type="button"
-                onClick={() => clearPickupSlot(slot.slot)}
+                onClick={() => deallocatePickupSlot(slot.slot)}
                 disabled={slot.booked === 0}
+                title="Release stale reservations for this slot. Active orders must be completed or cancelled first."
                 className="mt-3 w-full rounded-lg bg-orange-100 px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-200 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Clear Slot
+                Deallocate Slot
               </button>
             </div>
           ))}
@@ -763,7 +823,7 @@ export const KitchenDashboard: React.FC = () => {
                               edit_note
                             </span>
                             <span>
-                              Special Note: "{item.specialInstruction}"
+                              Special Note: &quot;{item.specialInstruction}&quot;
                             </span>
                           </div>
                         )}

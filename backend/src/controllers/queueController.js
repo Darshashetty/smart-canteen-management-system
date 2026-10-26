@@ -230,6 +230,55 @@ const markOrderDelayed = asyncHandler(async (req, res) => {
   const { reason } = req.body;
   const orderId = req.params.id;
 
+  if (require('mongoose').connection.readyState !== 1) {
+    const InMemoryStore = require('../services/inMemoryStore');
+    const order = InMemoryStore.getOrderById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        message: 'Order not found',
+        details: { orderId }
+      });
+    }
+
+    const currentStatus = order.order_status;
+    const allowedTransitions = STATUS_TRANSITIONS[currentStatus] || [];
+
+    if (!allowedTransitions.includes(ORDER_STATUS.DELAYED)) {
+      return res.status(409).json({
+        message: `Invalid status transition: Cannot mark order as Delayed from '${currentStatus}' status.`,
+        details: { currentStatus, allowedTransitions }
+      });
+    }
+
+    const updatedOrder = InMemoryStore.updateOrderStatus(
+      order._id,
+      ORDER_STATUS.DELAYED,
+      reason || 'Kitchen delay reported'
+    );
+
+    await notifyOrderDelayed(updatedOrder, reason || 'Kitchen delay reported');
+
+    InMemoryStore.addLog({
+      userId: req.user._id,
+      userName: req.user.name,
+      role: req.user.role,
+      action: 'ORDER_FLAGGED_DELAYED',
+      details: { order_id: updatedOrder.order_id, token_number: updatedOrder.token_number, reason }
+    });
+
+    const { getSocketIOInstance } = require('../services/notificationService');
+    const io = getSocketIOInstance();
+    if (io) {
+      io.emit('queue_updated');
+      io.emit('order_status_updated', updatedOrder);
+    }
+
+    return res.json({
+      message: `Order ${updatedOrder.token_number} marked as Delayed`,
+      data: updatedOrder
+    });
+  }
+
   const order = await findOrderByAnyId(orderId);
   if (!order) {
     return res.status(404).json({

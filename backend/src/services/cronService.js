@@ -13,9 +13,94 @@ let cronTimer = null;
  * - Marks Ready orders Not Collected after timeout
  * - Sends "pickup approaching" notification once per order
  */
+const runInMemoryBackgroundChecks = async () => {
+  const InMemoryStore = require('./inMemoryStore');
+  const now = new Date();
+  const settings = InMemoryStore.getSettings();
+  const { getSocketIOInstance } = require('./notificationService');
+  const io = getSocketIOInstance();
+
+  const gracePeriodMinutes = Number(settings.auto_delay_grace_minutes ?? 5);
+  const uncollectedTimeoutMinutes = Number(settings.uncollected_timeout_minutes ?? 60);
+
+  const graceThreshold = new Date(now.getTime() - gracePeriodMinutes * 60 * 1000);
+  const overdueOrders = InMemoryStore.getOrders().filter(
+    (order) =>
+      [ORDER_STATUS.ACCEPTED, ORDER_STATUS.PREPARING].includes(order.order_status) &&
+      !order.is_delayed &&
+      order.estimated_ready_time &&
+      new Date(order.estimated_ready_time) < graceThreshold
+  );
+
+  for (const order of overdueOrders) {
+    const previousStatus = order.order_status;
+    order.order_status = ORDER_STATUS.DELAYED;
+    order.is_delayed = true;
+    order.history.push({
+      from: previousStatus,
+      to: ORDER_STATUS.DELAYED,
+      timestamp: new Date(),
+      reason: 'Kitchen preparation exceeded estimate'
+    });
+    await notifyOrderDelayed(order, 'Kitchen preparation has exceeded initial estimate');
+    if (io) {
+      io.emit('queue_updated');
+      io.emit('order_status_updated', order);
+    }
+  }
+
+  const uncollectedThreshold = new Date(now.getTime() - uncollectedTimeoutMinutes * 60 * 1000);
+  const staleReadyOrders = InMemoryStore.getOrders().filter(
+    (order) =>
+      order.order_status === ORDER_STATUS.READY &&
+      order.actual_ready_time &&
+      new Date(order.actual_ready_time) < uncollectedThreshold
+  );
+
+  for (const order of staleReadyOrders) {
+    InMemoryStore.updateOrderStatus(order._id, ORDER_STATUS.NOT_COLLECTED);
+    if (io) {
+      io.emit('queue_updated');
+      io.emit('order_status_updated', order);
+      io.emit('pickup_slots_updated');
+    }
+  }
+
+  const upcomingThreshold = new Date(now.getTime() + 10 * 60 * 1000);
+  const approachingOrders = InMemoryStore.getOrders().filter((order) => {
+    const pickupTime = new Date(order.pickup_time);
+    return (
+      pickupTime >= now &&
+      pickupTime <= upcomingThreshold &&
+      !order.pickup_approaching_notified &&
+      ![
+        ORDER_STATUS.CANCELLED,
+        ORDER_STATUS.REJECTED,
+        ORDER_STATUS.COLLECTED,
+        ORDER_STATUS.COMPLETED,
+        ORDER_STATUS.NOT_COLLECTED
+      ].includes(order.order_status)
+    );
+  });
+
+  for (const order of approachingOrders) {
+    order.pickup_approaching_notified = true;
+    const minutesLeft = Math.max(
+      1,
+      Math.round((new Date(order.pickup_time).getTime() - now.getTime()) / 60000)
+    );
+    await notifyPickupApproaching(order, minutesLeft);
+  }
+};
+
 const runBackgroundChecks = async () => {
-  // Only query database if MongoDB is connected
+  // Run against the in-memory store used by tests/dev when MongoDB is absent.
   if (mongoose.connection.readyState !== 1) {
+    try {
+      await runInMemoryBackgroundChecks();
+    } catch (error) {
+      console.error('[Cron Error] Failure in in-memory background monitor:', error.message);
+    }
     return;
   }
 
@@ -25,8 +110,10 @@ const runBackgroundChecks = async () => {
     const { getSocketIOInstance } = require('./notificationService');
     const io = getSocketIOInstance();
 
-    const gracePeriodMinutes = 5; // 5 minutes grace past estimated ready time
-    const uncollectedTimeoutMinutes = settings.uncollectedTimeoutMinutes || 60;
+    const gracePeriodMinutes = Number(settings.auto_delay_grace_minutes ?? settings.autoDelayGraceMinutes ?? 5);
+    const uncollectedTimeoutMinutes = Number(
+      settings.uncollected_timeout_minutes ?? settings.uncollectedTimeoutMinutes ?? 60
+    );
 
     // 1. Mark orders Delayed when past estimated ready time plus grace
     const graceThreshold = new Date(now.getTime() - gracePeriodMinutes * 60 * 1000);

@@ -259,6 +259,24 @@ export const orderAPI = {
       body: JSON.stringify({ slot }),
     }),
 
+  deallocateSlot: (slot: string, date?: string) =>
+    apiFetch<{
+      data: { slot: string; date: string; booked: number; released: number };
+      message: string;
+    }>("/orders/pickup-slots/deallocate", {
+      method: "POST",
+      body: JSON.stringify(date ? { slot, date } : { slot }),
+    }),
+
+  resetPickupSlots: (date?: string) =>
+    apiFetch<{
+      data: { date: string; slotsReset: number; released: number; booked: number };
+      message: string;
+    }>("/orders/pickup-slots/reset", {
+      method: "POST",
+      body: JSON.stringify(date ? { date } : {}),
+    }),
+
   reorder: (id: string) =>
     apiFetch<{
       message: string;
@@ -546,7 +564,7 @@ export function mapBackendSlot(b: {
   selectable?: boolean;
   status?: string;
 }): PickupSlot {
-  const maxCapacity = Number(b.totalCapacity ?? b.capacity ?? 0);
+  const maxCapacity = Number(b.totalCapacity ?? b.capacity ?? 20) || 20;
   const available = Number(b.available ?? b.remaining ?? maxCapacity);
 
   return {

@@ -345,6 +345,10 @@ interface AppContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isAuthReady: boolean;
+  loginPromptOpen: boolean;
+  loginPromptMessage: string;
+  promptLogin: (message?: string) => void;
+  dismissLoginPrompt: () => void;
   menu: MenuItem[];
   saveMenuItem: (item: Partial<MenuItem> & { id?: string }) => void;
   deleteMenuItem: (itemId: string) => void;
@@ -383,6 +387,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [role, setRoleState] = useState<UserRole>("customer");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+  const [loginPromptOpen, setLoginPromptOpen] = useState<boolean>(false);
+  const [loginPromptMessage, setLoginPromptMessage] = useState<string>(
+    "Please log in to place an order and reserve a pickup slot."
+  );
   const [currentUser, setCurrentUser] = useState<UserAccount>({
     id: "",
     name: "Guest",
@@ -413,6 +421,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 4000);
   }, []);
+
+  const promptLogin = useCallback((message?: string) => {
+    if (message) setLoginPromptMessage(message);
+    setLoginPromptOpen(true);
+  }, []);
+
+  const dismissLoginPrompt = useCallback(() => {
+    setLoginPromptOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) setLoginPromptOpen(false);
+  }, [isAuthenticated]);
 
   // ─── Fetch menu from backend ──────────────────────────
   const fetchMenu = useCallback(async () => {
@@ -1191,6 +1212,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         logout,
         isAuthenticated,
         isAuthReady,
+        loginPromptOpen,
+        loginPromptMessage,
+        promptLogin,
+        dismissLoginPrompt,
         menu,
         saveMenuItem,
         deleteMenuItem,

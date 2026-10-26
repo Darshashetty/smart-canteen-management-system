@@ -10,7 +10,7 @@ const LoginPromptButton: React.FC<{ children: React.ReactNode; className: string
   children,
   className,
 }) => {
-  const { isAuthenticated, showToast } = useApp();
+  const { isAuthenticated, promptLogin } = useApp();
   const router = useRouter();
 
   const handleClick = (e: React.MouseEvent) => {
@@ -18,17 +18,9 @@ const LoginPromptButton: React.FC<{ children: React.ReactNode; className: string
     if (isAuthenticated) {
       router.push("/menu");
     } else {
-      showToast("Please log in or create an account to place an order.");
+      promptLogin("Please log in or create an account to place an order.");
     }
   };
-
-  if (isAuthenticated) {
-    return (
-      <button type="button" onClick={handleClick} className={className}>
-        {children}
-      </button>
-    );
-  }
 
   return (
     <button type="button" onClick={handleClick} className={className}>
@@ -246,7 +238,7 @@ export default function LandingPage() {
               Log In
             </Link>
             <LoginPromptButton
-              className="inline-flex items-center justify-center px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-status-limited-solid text-on-primary text-xs sm:text-sm font-semibold shadow-sm hover:bg-primary-container transition-colors min-h-[38px] sm:min-h-[44px]"
+              className="inline-flex items-center justify-center px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-primary text-on-primary text-xs sm:text-sm font-semibold shadow-sm hover:bg-primary-fixed-dim transition-colors min-h-[38px] sm:min-h-[44px]"
             >
               Order Now
             </LoginPromptButton>
@@ -296,7 +288,7 @@ export default function LandingPage() {
                   {/* CTAs */}
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-2">
             <LoginPromptButton
-              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl bg-status-limited-solid text-on-primary text-sm sm:text-base font-semibold shadow-md hover:bg-primary-container transition-all active:scale-[0.98] min-h-[48px] sm:min-h-[52px]"
+              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl bg-primary text-on-primary text-sm sm:text-base font-semibold shadow-md hover:bg-primary-fixed-dim transition-all active:scale-[0.98] min-h-[48px] sm:min-h-[52px]"
             >
               <span className="material-symbols-outlined text-[20px]">
                 restaurant

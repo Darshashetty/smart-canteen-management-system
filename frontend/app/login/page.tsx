@@ -19,6 +19,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("password123");
   const [isLoading, setIsLoading] = useState(false);
 
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("signup") === "1") {
+      setIsSignup(true);
+      setEmail("");
+      setPassword("");
+    }
+  }, []);
+
   const rolesConfig: {
     role: UserRole;
     title: string;

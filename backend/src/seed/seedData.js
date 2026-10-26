@@ -14,10 +14,10 @@ const RESTAURANT_MENU_ADDITIONS = [
   ['ITEM-2007', 'French Toast Breakfast', 'Breakfast', 420, 18, 8, 'https://images.unsplash.com/photo-1484723091739-30a097e8f929?auto=format&fit=crop&w=800&q=85'],
   ['ITEM-2008', 'Omelette with Toast', 'Breakfast', 380, 20, 7, 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=85'],
   ['ITEM-2009', 'Buttermilk Pancake Stack', 'Breakfast', 460, 15, 10, 'https://images.unsplash.com/photo-1528207776546-365bb710ee93?auto=format&fit=crop&w=800&q=85'],
-  ['ITEM-2010', 'Chicken Nuggets', 'Snacks', 390, 24, 8, 'https://images.unsplash.com/photo-1562967916-eb40622dbd92?auto=format&fit=crop&w=800&q=85'],
-  ['ITEM-2011', 'Chocolate Lava Cake', 'Desserts', 450, 16, 6, 'https://images.unsplash.com/photo-1606313564200-e75d5e30476d?auto=format&fit=crop&w=800&q=85'],
+  ['ITEM-2010', 'Chicken Nuggets', 'Snacks', 390, 24, 8, 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=800&q=85'],
+  ['ITEM-2011', 'Chocolate Lava Cake', 'Desserts', 450, 16, 6, 'https://upload.wikimedia.org/wikipedia/commons/9/95/Chocolate_lava_cake.jpg'],
   ['ITEM-2012', 'Fresh Orange Juice', 'Beverages', 260, 30, 3, 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?auto=format&fit=crop&w=800&q=85'],
-  ['ITEM-2013', 'Mint Lemonade', 'Beverages', 280, 28, 4, 'https://images.unsplash.com/photo-1523677011781-c91d1ebe2f0a?auto=format&fit=crop&w=800&q=85'],
+  ['ITEM-2013', 'Mint Lemonade', 'Beverages', 280, 28, 4, 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=800&q=85'],
   ['ITEM-2014', 'Paneer Butter Masala', 'Meals', 680, 16, 14, 'https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=800&q=85'],
   ['ITEM-2015', 'Dal Makhani', 'Meals', 520, 20, 12, 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=85'],
   ['ITEM-2016', 'Chicken Seekh Kebab', 'Meals', 760, 14, 15, 'https://images.unsplash.com/photo-1529042410759-befb1204b468?auto=format&fit=crop&w=800&q=85'],
@@ -43,6 +43,19 @@ const RESTAURANT_MENU_ADDITIONS = [
   image,
   status: MENU_ITEM_STATUS.AVAILABLE
 }));
+
+const MENU_IMAGE_REPAIRS = {
+  'https://images.unsplash.com/photo-1514116349449-55427895b2c4?auto=format&fit=crop&w=600&q=80':
+    'https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1514116349449-55427895b2c4?w=600':
+    'https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=600&q=80',
+  'https://images.unsplash.com/photo-1562967916-eb40622dbd92?auto=format&fit=crop&w=800&q=85':
+    'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=800&q=85',
+  'https://images.unsplash.com/photo-1606313564200-e75d5e30476d?auto=format&fit=crop&w=800&q=85':
+    'https://upload.wikimedia.org/wikipedia/commons/9/95/Chocolate_lava_cake.jpg',
+  'https://images.unsplash.com/photo-1523677011781-c91d1ebe2f0a?auto=format&fit=crop&w=800&q=85':
+    'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=800&q=85'
+};
 
 const REQUESTED_MENU_ADDITIONS = [
   ['ITEM-3001', 'Oreo Milkshake', 'Beverages', 180, 24, 5, 'Creamy vanilla shake blended with Oreo cookies.', 'https://upload.wikimedia.org/wikipedia/commons/c/c3/Oreo_milkshake_-_Creperie_Doux_Sourire_2025-05-03.jpg'],
@@ -171,6 +184,23 @@ const seedMenuAdditions = async () => {
   return { inserted, totalAdditions: MENU_ADDITIONS.length };
 };
 
+const repairMenuImages = async () => {
+  const operations = Object.entries(MENU_IMAGE_REPAIRS).map(([oldImage, newImage]) => ({
+    updateMany: {
+      filter: { image: oldImage },
+      update: { $set: { image: newImage } }
+    }
+  }));
+
+  if (operations.length === 0) return 0;
+
+  const result = await MenuItem.bulkWrite(operations);
+  if (result.modifiedCount > 0) {
+    console.log(`[Seed] Repaired ${result.modifiedCount} broken menu image URL(s).`);
+  }
+  return result.modifiedCount;
+};
+
 const seedInitialData = async () => {
   try {
     // 1. Seed Canteen Settings if not present
@@ -233,7 +263,7 @@ const seedInitialData = async () => {
           available_quantity: 25,
           preparation_time: 8,
           status: MENU_ITEM_STATUS.AVAILABLE,
-          image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80'
+          image: 'https://images.unsplash.com/photo-1606755962773-d324e0a13086?auto=format&fit=crop&w=600&q=80'
         },
         {
           item_id: 'ITEM-1002',
@@ -253,7 +283,7 @@ const seedInitialData = async () => {
           available_quantity: 50,
           preparation_time: 2,
           status: MENU_ITEM_STATUS.AVAILABLE,
-          image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=600&q=80'
+          image: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=600&q=80'
         },
         {
           item_id: 'ITEM-1004',
@@ -323,7 +353,7 @@ const seedInitialData = async () => {
           available_quantity: 16,
           preparation_time: 8,
           status: MENU_ITEM_STATUS.AVAILABLE,
-          image: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=600&q=80'
+          image: 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=600&q=80'
         },
         {
           item_id: 'ITEM-1011',
@@ -333,7 +363,7 @@ const seedInitialData = async () => {
           available_quantity: 22,
           preparation_time: 3,
           status: MENU_ITEM_STATUS.AVAILABLE,
-          image: 'https://images.unsplash.com/photo-1564355808539-22fda35bed7e?auto=format&fit=crop&w=600&q=80'
+          image: 'https://upload.wikimedia.org/wikipedia/commons/d/df/Brownie_dessert_%2843110731564%29.jpg'
         },
         {
           item_id: 'ITEM-1012',
@@ -373,7 +403,7 @@ const seedInitialData = async () => {
           available_quantity: 28,
           preparation_time: 6,
           status: MENU_ITEM_STATUS.AVAILABLE,
-          image: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=600&q=80'
+          image: 'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?auto=format&fit=crop&w=600&q=80'
         },
         {
           item_id: 'ITEM-1016',
@@ -383,7 +413,7 @@ const seedInitialData = async () => {
           available_quantity: 15,
           preparation_time: 2,
           status: MENU_ITEM_STATUS.AVAILABLE,
-          image: 'https://images.unsplash.com/photo-1586985289688-ca3cf47d3e6e?auto=format&fit=crop&w=600&q=80'
+          image: 'https://upload.wikimedia.org/wikipedia/commons/5/50/Red_velvet_cake_slice.jpg'
         }
       ];
 
@@ -394,6 +424,7 @@ const seedInitialData = async () => {
     }
 
     await seedMenuAdditions();
+    await repairMenuImages();
   } catch (error) {
     console.error('[Seed Error] Failed to populate seed data:', error.message);
     throw error;

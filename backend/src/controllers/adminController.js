@@ -160,6 +160,40 @@ const getCanteenSettings = asyncHandler(async (req, res) => {
  * Update canteen operational limits and categories
  */
 const updateCanteenSettings = asyncHandler(async (req, res) => {
+  if (require('mongoose').connection.readyState !== 1) {
+    const InMemoryStore = require('../services/inMemoryStore');
+    const allowed = [
+      'max_orders_per_slot',
+      'max_items_per_customer',
+      'max_scheduled_pickups_per_slot',
+      'slot_interval_minutes',
+      'kitchen_capacity',
+      'auto_delay_grace_minutes',
+      'uncollected_timeout_minutes',
+      'opening_time',
+      'closing_time',
+      'categories'
+    ];
+    const updates = {};
+    for (const field of allowed) {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    }
+
+    const settings = InMemoryStore.updateSettings(updates);
+    InMemoryStore.addLog({
+      userId: req.user._id,
+      userName: req.user.name,
+      role: req.user.role,
+      action: 'CANTEEN_SETTINGS_UPDATED',
+      details: updates
+    });
+
+    return res.json({
+      message: 'Canteen settings updated successfully',
+      data: settings
+    });
+  }
+
   let settings = await CanteenSetting.findOne();
   if (!settings) {
     settings = new CanteenSetting(DEFAULT_SETTINGS);
@@ -171,6 +205,8 @@ const updateCanteenSettings = asyncHandler(async (req, res) => {
     max_scheduled_pickups_per_slot,
     slot_interval_minutes,
     kitchen_capacity,
+    auto_delay_grace_minutes,
+    uncollected_timeout_minutes,
     opening_time,
     closing_time,
     categories
@@ -181,6 +217,8 @@ const updateCanteenSettings = asyncHandler(async (req, res) => {
   if (max_scheduled_pickups_per_slot !== undefined) settings.max_scheduled_pickups_per_slot = Number(max_scheduled_pickups_per_slot);
   if (slot_interval_minutes !== undefined) settings.slot_interval_minutes = Number(slot_interval_minutes);
   if (kitchen_capacity !== undefined) settings.kitchen_capacity = Number(kitchen_capacity);
+  if (auto_delay_grace_minutes !== undefined) settings.auto_delay_grace_minutes = Number(auto_delay_grace_minutes);
+  if (uncollected_timeout_minutes !== undefined) settings.uncollected_timeout_minutes = Number(uncollected_timeout_minutes);
   if (opening_time !== undefined) settings.opening_time = opening_time;
   if (closing_time !== undefined) settings.closing_time = closing_time;
   if (categories !== undefined && Array.isArray(categories)) settings.categories = categories;
@@ -478,12 +516,43 @@ const deleteCanteen = asyncHandler(async (req, res) => {
   });
 });
 
+const reconcileSlots = asyncHandler(async (req, res) => {
+  const { reconcileSlotBookings } = require('../services/slotService');
+  const apply = req.body && req.body.apply === false ? false : true;
+  const report = await reconcileSlotBookings({ apply });
+
+  const InMemoryStore = require('../services/inMemoryStore');
+  if (require('mongoose').connection.readyState !== 1) {
+    InMemoryStore.addLog({
+      userId: req.user._id,
+      userName: req.user.name,
+      role: req.user.role,
+      action: 'SLOT_BOOKINGS_RECONCILED',
+      details: { apply, changes: report.changes.length }
+    });
+  } else {
+    await SystemLog.create({
+      user_id: req.user._id,
+      user_name: req.user.name,
+      role: req.user.role,
+      action: 'SLOT_BOOKINGS_RECONCILED',
+      details: { apply, changes: report.changes.length }
+    });
+  }
+
+  return res.json({
+    message: 'Pickup slot bookings reconciled',
+    data: report
+  });
+});
+
 module.exports = {
   getAllUsers,
   updateUserRoleAndStatus,
   getSystemLogs,
   getCanteenSettings,
   updateCanteenSettings,
+  reconcileSlots,
   getAllCategories,
   createCategory,
   updateCategory,
