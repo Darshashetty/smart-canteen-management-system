@@ -46,7 +46,7 @@ export const SmartCardTopUpModal: React.FC<SmartCardTopUpModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-slate-900/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-inverse-surface/60 backdrop-blur-sm"
       onClick={() => {
         if (!isProcessing) onClose();
       }}
@@ -57,34 +57,34 @@ export const SmartCardTopUpModal: React.FC<SmartCardTopUpModalProps> = ({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[20px] text-orange-600">
+            <span className="material-symbols-outlined text-[20px] text-primary">
               add_card
             </span>
-            <h3 className="font-bold text-slate-900 text-sm">
+            <h3 className="font-bold text-text-primary text-sm">
               Add Money to Smart Card
             </h3>
           </div>
           <button
             onClick={onClose}
             disabled={isProcessing}
-            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-500 flex items-center justify-center"
+            className="w-7 h-7 rounded-lg bg-primary-container hover:bg-primary-fixed disabled:opacity-50 text-on-primary-container flex items-center justify-center"
             aria-label="Close top up"
           >
             <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
-        <div className="bg-slate-50 rounded-xl p-3 flex items-center justify-between border border-slate-100">
-          <span className="text-xs text-slate-500 font-medium">
+        <div className="bg-surface-container-low rounded-xl p-3 flex items-center justify-between border border-border-subtle">
+          <span className="text-xs text-text-muted font-medium">
             Current balance
           </span>
-          <span className="font-extrabold text-slate-900 text-base">
+          <span className="font-extrabold text-text-primary text-base">
             Rs. {balance.toFixed(2)}
           </span>
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          <label className="text-[11px] font-bold text-text-muted/70 uppercase tracking-wider">
             Top-up amount (Rs.)
           </label>
           <div className="grid grid-cols-4 gap-2">
@@ -99,8 +99,8 @@ export const SmartCardTopUpModal: React.FC<SmartCardTopUpModalProps> = ({
                 }}
                 className={`py-2 rounded-xl text-xs font-extrabold border transition-all ${
                   Number(amount) === preset
-                    ? "bg-orange-600 text-white border-orange-600"
-                    : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                    ? "bg-primary text-white border-primary"
+                    : "bg-primary-container/50 text-on-primary-container border-primary-fixed-dim hover:bg-primary-fixed/60"
                 } disabled:opacity-60`}
               >
                 {preset}
@@ -118,13 +118,13 @@ export const SmartCardTopUpModal: React.FC<SmartCardTopUpModalProps> = ({
             }}
             disabled={isProcessing}
             placeholder="Custom amount"
-            className="bg-slate-50 text-slate-900 text-sm font-semibold rounded-xl px-3 py-2.5 border border-slate-200 outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+            className="bg-surface-container-low text-text-primary text-sm font-semibold rounded-xl px-3 py-2.5 border border-border-strong outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
           />
         </div>
 
         {error && <p className="text-[11px] font-bold text-rose-500">{error}</p>}
 
-        <p className="text-[10px] text-slate-400 leading-relaxed">
+        <p className="text-[10px] text-text-muted/70 leading-relaxed">
           Demo recharge for the campus canteen — the amount is credited
           instantly and no real money is charged.
         </p>
@@ -132,7 +132,7 @@ export const SmartCardTopUpModal: React.FC<SmartCardTopUpModalProps> = ({
         <button
           onClick={handleAddMoney}
           disabled={isProcessing || !valid}
-          className="w-full py-3 bg-orange-600 hover:bg-orange-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
+          className="w-full py-3 bg-primary hover:bg-primary-hover disabled:opacity-60 disabled:cursor-not-allowed text-white font-extrabold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
         >
           <span className="material-symbols-outlined text-[20px]">
             {isProcessing ? "progress_activity" : "account_balance_wallet"}

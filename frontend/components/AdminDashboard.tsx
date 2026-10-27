@@ -16,7 +16,6 @@ export const AdminDashboard: React.FC = () => {
 
   // Categories State (Phase 5)
   const [categoriesList, setCategoriesList] = useState<any[]>([]);
-  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [categoryForm, setCategoryForm] = useState({
@@ -29,7 +28,6 @@ export const AdminDashboard: React.FC = () => {
 
   // Canteens State (Phase 5)
   const [canteensList, setCanteensList] = useState<any[]>([]);
-  const [isLoadingCanteens, setIsLoadingCanteens] = useState(false);
   const [isCanteenModalOpen, setIsCanteenModalOpen] = useState(false);
   const [editingCanteenId, setEditingCanteenId] = useState<string | null>(null);
   const [canteenForm, setCanteenForm] = useState({
@@ -58,7 +56,6 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const fetchCategories = async () => {
-    setIsLoadingCategories(true);
     try {
       const res = await adminAPI.getCategories();
       if (res && res.data) {
@@ -74,12 +71,10 @@ export const AdminDashboard: React.FC = () => {
         { _id: "cat_005", name: "Desserts", description: "Sweet pastries & treats", icon: "icecream", is_active: true },
       ]);
     } finally {
-      setIsLoadingCategories(false);
     }
   };
 
   const fetchCanteens = async () => {
-    setIsLoadingCanteens(true);
     try {
       const res = await adminAPI.getCanteens();
       if (res && res.data) {
@@ -93,7 +88,6 @@ export const AdminDashboard: React.FC = () => {
         { _id: "cant_003", name: "Hostel Night Canteen", location: "Residential Quad Building C", opening_time: "18:00", closing_time: "02:00", is_active: true, contact_number: "+92 300 7778899" },
       ]);
     } finally {
-      setIsLoadingCanteens(false);
     }
   };
 
@@ -214,7 +208,7 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 pt-3 sm:pt-4 pb-32 flex flex-col gap-4 sm:gap-6">
       {/* Admin Header Banner */}
-      <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-6 shadow-xl border border-slate-800 flex flex-col gap-3 md:flex-row md:items-center justify-between md:gap-4">
+      <div className="bg-inverse-surface text-white rounded-2xl p-4 sm:p-6 shadow-xl border border-white/10 flex flex-col gap-3 md:flex-row md:items-center justify-between md:gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-purple-600 flex items-center justify-center text-white shadow-md">
             <span className="material-symbols-outlined text-[28px]">
@@ -237,7 +231,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Admin Section Tabs */}
-        <div className="flex items-center gap-1 bg-slate-800 p-1.5 rounded-xl border border-slate-700 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1 bg-white/10 p-1.5 rounded-xl border border-white/15 overflow-x-auto no-scrollbar">
           {[
             { key: "users", label: "Users & Accounts" },
             { key: "canteens", label: "Canteen Hubs" },
@@ -262,9 +256,9 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Tab 1: User Management */}
       {activeAdminTab === "users" && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-border-subtle flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900">
+            <h2 className="text-base font-bold text-text-primary">
               System Accounts & Role Assignments
             </h2>
             <button
@@ -280,7 +274,7 @@ export const AdminDashboard: React.FC = () => {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
+              <thead className="bg-surface-container-low text-text-muted uppercase font-bold text-[10px] tracking-wider border-b border-border-strong">
                 <tr>
                   <th className="p-3">User Name</th>
                   <th className="p-3">Email Address</th>
@@ -289,7 +283,7 @@ export const AdminDashboard: React.FC = () => {
                   <th className="p-3">Phone</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border-subtle">
                 {(usersList.length > 0
                   ? usersList
                   : [
@@ -327,9 +321,9 @@ export const AdminDashboard: React.FC = () => {
                       },
                     ]
                 ).map((u) => (
-                  <tr key={u._id || u.id} className="hover:bg-slate-50">
-                    <td className="p-3 font-bold text-slate-900">{u.name}</td>
-                    <td className="p-3 text-slate-600 font-medium">{u.email}</td>
+                  <tr key={u._id || u.id} className="hover:bg-surface-container-low">
+                    <td className="p-3 font-bold text-text-primary">{u.name}</td>
+                    <td className="p-3 text-text-muted font-medium">{u.email}</td>
                     <td className="p-3">
                       <span className="font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200 uppercase text-[10px]">
                         {u.role}
@@ -340,7 +334,7 @@ export const AdminDashboard: React.FC = () => {
                         {u.account_status || u.status || "active"}
                       </span>
                     </td>
-                    <td className="p-3 text-slate-500">{u.phone || "—"}</td>
+                    <td className="p-3 text-text-muted">{u.phone || "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -351,15 +345,15 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Tab 2: System Logs */}
       {activeAdminTab === "logs" && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-border-subtle flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900">
+            <h2 className="text-base font-bold text-text-primary">
               System Audit & Activity Logs
             </h2>
-            <span className="text-xs text-slate-500">Live Audit Stream</span>
+            <span className="text-xs text-text-muted">Live Audit Stream</span>
           </div>
 
-          <div className="divide-y divide-slate-100 font-mono text-xs">
+          <div className="divide-y divide-border-subtle font-mono text-xs">
             {(logsList.length > 0
               ? logsList
               : [
@@ -384,13 +378,13 @@ export const AdminDashboard: React.FC = () => {
                 className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-slate-400 font-semibold shrink-0">
+                  <span className="text-text-muted/70 font-semibold shrink-0">
                     [{new Date(log.created_at || 0).toLocaleTimeString()}]
                   </span>
-                  <span className="font-bold text-slate-900 shrink-0">
+                  <span className="font-bold text-text-primary shrink-0">
                     {log.user_name || log.user || "System"}:
                   </span>
-                  <span className="text-slate-700 truncate">
+                  <span className="text-text-primary truncate">
                     {log.action} {log.details ? JSON.stringify(log.details) : ""}
                   </span>
                 </div>
@@ -405,13 +399,13 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Tab 3: Canteen Accounts / Hubs (Phase 5) */}
       {activeAdminTab === "canteens" && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-border-subtle flex flex-col gap-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold text-slate-900">
+              <h2 className="text-base font-bold text-text-primary">
                 Canteen Hubs & Operations Management
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-text-muted">
                 Configure multiple canteen accounts, operating hours, and location assignments.
               </p>
             </div>
@@ -428,7 +422,7 @@ export const AdminDashboard: React.FC = () => {
             {canteensList.map((canteen) => (
               <div
                 key={canteen._id || canteen.id}
-                className="p-5 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white hover:shadow-md transition-all flex flex-col justify-between gap-4"
+                className="p-5 rounded-2xl border border-border-strong bg-surface-container-low hover:bg-white hover:shadow-md transition-all flex flex-col justify-between gap-4"
               >
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
@@ -446,37 +440,37 @@ export const AdminDashboard: React.FC = () => {
                     </span>
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-slate-900 text-sm">
+                    <h3 className="font-extrabold text-text-primary text-sm">
                       {canteen.name}
                     </h3>
-                    <p className="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
-                      <span className="material-symbols-outlined text-[14px] text-slate-400">location_on</span>
+                    <p className="text-xs text-text-muted flex items-center gap-1 mt-0.5">
+                      <span className="material-symbols-outlined text-[14px] text-text-muted/70">location_on</span>
                       <span>{canteen.location}</span>
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-slate-200/80">
+                  <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-border-subtle">
                     <div>
-                      <span className="text-slate-400">Hours:</span>
-                      <p className="font-semibold text-slate-700">{canteen.opening_time || "08:00"} - {canteen.closing_time || "20:00"}</p>
+                      <span className="text-text-muted/70">Hours:</span>
+                      <p className="font-semibold text-text-primary">{canteen.opening_time || "08:00"} - {canteen.closing_time || "20:00"}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400">Contact:</span>
-                      <p className="font-semibold text-slate-700">{canteen.contact_number || "—"}</p>
+                      <span className="text-text-muted/70">Contact:</span>
+                      <p className="font-semibold text-text-primary">{canteen.contact_number || "—"}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-strong">
                   <button
                     onClick={() => handleOpenEditCanteen(canteen)}
-                    className="p-1.5 text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                    className="p-1.5 text-text-muted hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                     title="Edit Canteen"
                   >
                     <span className="material-symbols-outlined text-[18px]">edit</span>
                   </button>
                   <button
                     onClick={() => handleDeleteCanteen(canteen._id || canteen.id, canteen.name)}
-                    className="p-1.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-1.5 text-text-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="Delete Canteen"
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -490,13 +484,13 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Tab 4: Food Categories Manager (Phase 5) */}
       {activeAdminTab === "categories" && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-border-subtle flex flex-col gap-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold text-slate-900">
+              <h2 className="text-base font-bold text-text-primary">
                 Food Taxonomy & Category Management
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-text-muted">
                 Manage system-wide menu categories, icons, descriptions, and visibility.
               </p>
             </div>
@@ -513,7 +507,7 @@ export const AdminDashboard: React.FC = () => {
             {categoriesList.map((cat) => (
               <div
                 key={cat._id || cat.id}
-                className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-white hover:shadow-md transition-all flex flex-col justify-between gap-3"
+                className="p-4 rounded-2xl border border-border-strong bg-surface-container-low hover:bg-white hover:shadow-md transition-all flex flex-col justify-between gap-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
@@ -533,23 +527,23 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div>
-                  <h3 className="font-extrabold text-slate-900 text-sm">{cat.name}</h3>
-                  <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">
+                  <h3 className="font-extrabold text-text-primary text-sm">{cat.name}</h3>
+                  <p className="text-xs text-text-muted line-clamp-2 mt-0.5">
                     {cat.description || "No description provided."}
                   </p>
                 </div>
 
-                <div className="flex items-center justify-end gap-1 pt-2 border-t border-slate-200">
+                <div className="flex items-center justify-end gap-1 pt-2 border-t border-border-strong">
                   <button
                     onClick={() => handleOpenEditCategory(cat)}
-                    className="p-1.5 text-slate-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                    className="p-1.5 text-text-muted hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                     title="Edit Category"
                   >
                     <span className="material-symbols-outlined text-[18px]">edit</span>
                   </button>
                   <button
                     onClick={() => handleDeleteCategory(cat._id || cat.id, cat.name)}
-                    className="p-1.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-1.5 text-text-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="Delete Category"
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -563,13 +557,13 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Tab 5: Role Permissions Matrix */}
       {activeAdminTab === "permissions" && (
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
-          <h2 className="text-base font-bold text-slate-900">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-border-subtle flex flex-col gap-4">
+          <h2 className="text-base font-bold text-text-primary">
             Role Access Permissions Matrix
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px]">
+              <thead className="bg-surface-container-low text-text-muted uppercase font-bold text-[10px]">
                 <tr>
                   <th className="p-3">Permission Feature</th>
                   <th className="p-3">Customer</th>
@@ -578,40 +572,40 @@ export const AdminDashboard: React.FC = () => {
                   <th className="p-3">Admin</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-medium">
+              <tbody className="divide-y divide-border-subtle font-medium">
                 <tr>
                   <td className="p-3 font-bold">Customer Reordering & Past Orders</td>
                   <td className="p-3 text-emerald-600 font-bold">YES</td>
-                  <td className="p-3 text-slate-400">NO</td>
-                  <td className="p-3 text-slate-400">NO</td>
-                  <td className="p-3 text-slate-400">NO</td>
+                  <td className="p-3 text-text-muted/70">NO</td>
+                  <td className="p-3 text-text-muted/70">NO</td>
+                  <td className="p-3 text-text-muted/70">NO</td>
                 </tr>
                 <tr>
                   <td className="p-3 font-bold">Pre-Order & Select Slot</td>
                   <td className="p-3 text-emerald-600 font-bold">YES</td>
-                  <td className="p-3 text-slate-400">NO</td>
-                  <td className="p-3 text-slate-400">NO</td>
-                  <td className="p-3 text-slate-400">NO</td>
+                  <td className="p-3 text-text-muted/70">NO</td>
+                  <td className="p-3 text-text-muted/70">NO</td>
+                  <td className="p-3 text-text-muted/70">NO</td>
                 </tr>
                 <tr>
                   <td className="p-3 font-bold">Advance Order Prep Status</td>
-                  <td className="p-3 text-slate-400">NO</td>
+                  <td className="p-3 text-text-muted/70">NO</td>
                   <td className="p-3 text-emerald-600 font-bold">YES</td>
                   <td className="p-3 text-emerald-600 font-bold">YES</td>
                   <td className="p-3 text-emerald-600 font-bold">YES</td>
                 </tr>
                 <tr>
                   <td className="p-3 font-bold">Kitchen Staff Roster Management</td>
-                  <td className="p-3 text-slate-400">NO</td>
-                  <td className="p-3 text-slate-400">NO</td>
+                  <td className="p-3 text-text-muted/70">NO</td>
+                  <td className="p-3 text-text-muted/70">NO</td>
                   <td className="p-3 text-emerald-600 font-bold">YES</td>
                   <td className="p-3 text-purple-600 font-bold">YES</td>
                 </tr>
                 <tr>
                   <td className="p-3 font-bold">Food Categories & Canteen Accounts</td>
-                  <td className="p-3 text-slate-400">NO</td>
-                  <td className="p-3 text-slate-400">NO</td>
-                  <td className="p-3 text-slate-400">NO</td>
+                  <td className="p-3 text-text-muted/70">NO</td>
+                  <td className="p-3 text-text-muted/70">NO</td>
+                  <td className="p-3 text-text-muted/70">NO</td>
                   <td className="p-3 text-purple-600 font-bold">YES</td>
                 </tr>
               </tbody>
@@ -622,18 +616,18 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Add / Edit Category Modal */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 anim-fade-in-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-purple-600 text-[22px]">category</span>
-                <h3 className="font-extrabold text-base text-slate-900">
+                <h3 className="font-extrabold text-base text-text-primary">
                   {editingCategoryId ? "Edit Food Category" : "Create Food Category"}
                 </h3>
               </div>
               <button
                 onClick={() => setIsCategoryModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-text-muted"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -641,35 +635,35 @@ export const AdminDashboard: React.FC = () => {
 
             <form onSubmit={handleSaveCategory} className="flex flex-col gap-3 text-xs">
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-slate-700">Category Name</label>
+                <label className="font-bold text-text-primary">Category Name</label>
                 <input
                   type="text"
                   value={categoryForm.name}
                   onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
                   placeholder="e.g., Wraps & Rolls"
                   required
-                  className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                  className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                 />
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-slate-700">Description</label>
+                <label className="font-bold text-text-primary">Description</label>
                 <textarea
                   value={categoryForm.description}
                   onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
                   placeholder="Brief description of items under this category"
                   rows={2}
-                  className="p-3 border border-slate-200 rounded-xl font-medium"
+                  className="p-3 border border-border-strong rounded-xl font-medium"
                 ></textarea>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-slate-700">Icon (Material Icon Name)</label>
+                  <label className="font-bold text-text-primary">Icon (Material Icon Name)</label>
                   <select
                     value={categoryForm.icon}
                     onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
-                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium bg-white"
+                    className="h-10 px-3 border border-border-strong rounded-xl font-medium bg-white"
                   >
                     <option value="lunch_dining">lunch_dining 🍔</option>
                     <option value="dinner_dining">dinner_dining 🍱</option>
@@ -683,11 +677,11 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-slate-700">Status</label>
+                  <label className="font-bold text-text-primary">Status</label>
                   <select
                     value={categoryForm.is_active ? "true" : "false"}
                     onChange={(e) => setCategoryForm({ ...categoryForm, is_active: e.target.value === "true" })}
-                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium bg-white"
+                    className="h-10 px-3 border border-border-strong rounded-xl font-medium bg-white"
                   >
                     <option value="true">Active</option>
                     <option value="false">Inactive</option>
@@ -695,11 +689,11 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 mt-2">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border-subtle mt-2">
                 <button
                   type="button"
                   onClick={() => setIsCategoryModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl"
+                  className="px-4 py-2 bg-primary-container text-on-primary-container font-bold rounded-xl border border-primary-fixed-dim hover:bg-primary-fixed transition-colors"
                 >
                   Cancel
                 </button>
@@ -717,18 +711,18 @@ export const AdminDashboard: React.FC = () => {
 
       {/* Add / Edit Canteen Modal */}
       {isCanteenModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 anim-fade-in-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-purple-600 text-[22px]">storefront</span>
-                <h3 className="font-extrabold text-base text-slate-900">
+                <h3 className="font-extrabold text-base text-text-primary">
                   {editingCanteenId ? "Edit Canteen Hub" : "Register Canteen Hub"}
                 </h3>
               </div>
               <button
                 onClick={() => setIsCanteenModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-text-muted"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -736,69 +730,69 @@ export const AdminDashboard: React.FC = () => {
 
             <form onSubmit={handleSaveCanteen} className="flex flex-col gap-3 text-xs">
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-slate-700">Canteen Hub Name</label>
+                <label className="font-bold text-text-primary">Canteen Hub Name</label>
                 <input
                   type="text"
                   value={canteenForm.name}
                   onChange={(e) => setCanteenForm({ ...canteenForm, name: e.target.value })}
                   placeholder="e.g., Executive Business Lounge Cafeteria"
                   required
-                  className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                  className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                 />
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-slate-700">Physical Location</label>
+                <label className="font-bold text-text-primary">Physical Location</label>
                 <input
                   type="text"
                   value={canteenForm.location}
                   onChange={(e) => setCanteenForm({ ...canteenForm, location: e.target.value })}
                   placeholder="e.g., Management Sciences Building, 2nd Floor"
                   required
-                  className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                  className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-slate-700">Opening Time</label>
+                  <label className="font-bold text-text-primary">Opening Time</label>
                   <input
                     type="time"
                     value={canteenForm.opening_time}
                     onChange={(e) => setCanteenForm({ ...canteenForm, opening_time: e.target.value })}
-                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                    className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-slate-700">Closing Time</label>
+                  <label className="font-bold text-text-primary">Closing Time</label>
                   <input
                     type="time"
                     value={canteenForm.closing_time}
                     onChange={(e) => setCanteenForm({ ...canteenForm, closing_time: e.target.value })}
-                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                    className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-slate-700">Contact Number</label>
+                  <label className="font-bold text-text-primary">Contact Number</label>
                   <input
                     type="tel"
                     value={canteenForm.contact_number}
                     onChange={(e) => setCanteenForm({ ...canteenForm, contact_number: e.target.value })}
                     placeholder="+92 300 0000000"
-                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                    className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-slate-700">Operational Status</label>
+                  <label className="font-bold text-text-primary">Operational Status</label>
                   <select
                     value={canteenForm.is_active ? "true" : "false"}
                     onChange={(e) => setCanteenForm({ ...canteenForm, is_active: e.target.value === "true" })}
-                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium bg-white"
+                    className="h-10 px-3 border border-border-strong rounded-xl font-medium bg-white"
                   >
                     <option value="true">Active Hub</option>
                     <option value="false">Inactive / Closed</option>
@@ -806,11 +800,11 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 mt-2">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border-subtle mt-2">
                 <button
                   type="button"
                   onClick={() => setIsCanteenModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl"
+                  className="px-4 py-2 bg-primary-container text-on-primary-container font-bold rounded-xl border border-primary-fixed-dim hover:bg-primary-fixed transition-colors"
                 >
                   Cancel
                 </button>

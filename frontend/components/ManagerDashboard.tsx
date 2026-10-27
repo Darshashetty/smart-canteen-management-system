@@ -268,7 +268,7 @@ export const ManagerDashboard: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 pt-3 sm:pt-4 pb-32 flex flex-col gap-4 sm:gap-6">
       {/* Manager Header & KPI Summary */}
-      <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-6 shadow-xl border border-slate-800 flex flex-col gap-3 sm:gap-4">
+      <div className="bg-inverse-surface text-white rounded-2xl p-4 sm:p-6 shadow-xl border border-white/10 flex flex-col gap-3 sm:gap-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-md">
@@ -287,7 +287,7 @@ export const ManagerDashboard: React.FC = () => {
           </div>
           <button
             onClick={handleOpenAddModal}
-            className="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white text-xs font-extrabold rounded-xl flex items-center gap-1.5 shadow-lg active:scale-95 self-start md:self-auto"
+            className="px-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-xs font-extrabold rounded-xl flex items-center gap-1.5 shadow-lg active:scale-95 self-start md:self-auto"
           >
             <span className="material-symbols-outlined text-[18px]">
               add_circle
@@ -298,7 +298,7 @@ export const ManagerDashboard: React.FC = () => {
 
         {/* KPI Micro Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-2">
-          <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex flex-col">
+          <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 flex flex-col">
             <span className="text-[11px] text-slate-400 font-medium">
               Total Revenue Today
             </span>
@@ -307,7 +307,7 @@ export const ManagerDashboard: React.FC = () => {
             </span>
           </div>
 
-          <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex flex-col">
+          <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 flex flex-col">
             <span className="text-[11px] text-slate-400 font-medium">
               Orders Completed / Total
             </span>
@@ -316,16 +316,16 @@ export const ManagerDashboard: React.FC = () => {
             </span>
           </div>
 
-          <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex flex-col">
+          <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 flex flex-col">
             <span className="text-[11px] text-slate-400 font-medium">
               Avg Preparation Time
             </span>
-            <span className="text-xl font-extrabold text-orange-400">
+            <span className="text-xl font-extrabold text-primary-fixed-dim">
               {liveAvgPrep} mins
             </span>
           </div>
 
-          <div className="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700/60 flex flex-col">
+          <div className="bg-white/10 p-3.5 rounded-xl border border-white/10 flex flex-col">
             <span className="text-[11px] text-slate-400 font-medium">
               Cancelled Orders
             </span>
@@ -337,13 +337,13 @@ export const ManagerDashboard: React.FC = () => {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="flex items-center gap-2 border-b border-border-strong pb-2">
         <button
           onClick={() => setActiveTab("operations")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
             activeTab === "operations"
-              ? "bg-slate-900 text-white shadow-md"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              ? "bg-primary text-white shadow-md"
+              : "bg-primary-container/50 text-on-primary-container hover:bg-primary-fixed border border-primary-fixed-dim"
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">dashboard</span>
@@ -356,8 +356,8 @@ export const ManagerDashboard: React.FC = () => {
           }}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
             activeTab === "staff"
-              ? "bg-orange-600 text-white shadow-md"
-              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+              ? "bg-primary text-white shadow-md"
+              : "bg-primary-container/50 text-on-primary-container hover:bg-primary-fixed border border-primary-fixed-dim"
           }`}
         >
           <span className="material-symbols-outlined text-[18px]">badge</span>
@@ -368,18 +368,18 @@ export const ManagerDashboard: React.FC = () => {
       {activeTab === "operations" ? (
         <>
       {/* AI Insights & Demand Predictions */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-border-subtle flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-orange-600 text-[24px]">
+            <span className="material-symbols-outlined text-primary text-[24px]">
               auto_awesome
             </span>
-            <h2 className="text-base font-bold text-slate-900">
+            <h2 className="text-base font-bold text-text-primary">
               Intelligent AI Demand & Delay Predictions
             </h2>
           </div>
-          <span className="text-xs font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-            AI Engine Active
+          <span className="text-xs font-bold text-primary bg-primary-fixed px-3 py-1 rounded-full">
+            Live Insights
           </span>
         </div>
 
@@ -387,26 +387,26 @@ export const ManagerDashboard: React.FC = () => {
           {aiInsights.map((insight) => (
             <div
               key={insight.id}
-              className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-between gap-2"
+              className="bg-surface-container-low rounded-xl p-4 border border-border-strong flex flex-col justify-between gap-2"
             >
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-orange-600 bg-white px-2 py-0.5 rounded border border-orange-200">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-white px-2 py-0.5 rounded border border-primary-fixed-dim">
                     {insight.type}
                   </span>
-                  <span className="text-[11px] text-slate-400 font-medium">
+                  <span className="text-[11px] text-text-muted/70 font-medium">
                     {insight.confidence}% confidence
                   </span>
                 </div>
-                <h3 className="font-bold text-slate-900 text-xs mt-1">
+                <h3 className="font-bold text-text-primary text-xs mt-1">
                   {insight.title}
                 </h3>
-                <p className="text-[11px] text-slate-600">
+                <p className="text-[11px] text-text-muted">
                   {insight.description}
                 </p>
               </div>
 
-              <div className="bg-white p-2.5 rounded-lg border border-slate-200 text-[11px] text-slate-800 font-semibold flex items-center gap-1.5 mt-2">
+              <div className="bg-white p-2.5 rounded-lg border border-border-strong text-[11px] text-text-primary font-semibold flex items-center gap-1.5 mt-2">
                 <span className="material-symbols-outlined text-[15px] text-emerald-600 shrink-0">
                   lightbulb
                 </span>
@@ -418,7 +418,7 @@ export const ManagerDashboard: React.FC = () => {
       </div>
 
       {/* Live AI Operations Cockpit */}
-      <section className="bg-slate-950 text-white rounded-2xl p-3 sm:p-5 shadow-xl border border-slate-800 flex flex-col gap-4 sm:gap-5">
+      <section className="bg-inverse-surface text-white rounded-2xl p-3 sm:p-5 shadow-xl border border-white/10 flex flex-col gap-4 sm:gap-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
             <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-400 font-bold">Live decision support</p>
@@ -444,8 +444,8 @@ export const ManagerDashboard: React.FC = () => {
                 <p className="text-xl font-extrabold mt-1">{aiOperations.peak.estimatedPeakWindow}</p>
                 <p className="text-xs text-slate-300 mt-1">{aiOperations.peak.orderPressure}</p>
               </div>
-              <div className="bg-orange-400/10 border border-orange-400/20 rounded-xl p-4">
-                <p className="text-[10px] uppercase tracking-wider text-orange-300 font-bold">Kitchen queue</p>
+              <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
+                <p className="text-[10px] uppercase tracking-wider text-primary-fixed-dim font-bold">Kitchen queue</p>
                 <p className="text-xl font-extrabold mt-1">{aiOperations.delays.activeOrdersCount} active</p>
                 <p className="text-xs text-slate-300 mt-1">{aiOperations.delays.systemQueueStatus}</p>
               </div>
@@ -457,45 +457,45 @@ export const ManagerDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="bg-white text-slate-900 rounded-xl p-4">
+              <div className="bg-white text-text-primary rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-bold text-sm">Demand & preparation plan</h3>
                   <span className="text-[10px] text-slate-400">Before {aiOperations.peak.estimatedPeakWindow}</span>
                 </div>
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-border-subtle">
                   {aiOperations.demand.slice(0, 5).map((item) => {
                     const prep = aiOperations.prep.find((forecast) => forecast.itemName === item.itemName);
                     return (
                       <div key={item.itemName} className="py-2 flex items-center justify-between gap-3 text-xs">
                         <div className="min-w-0">
                           <p className="font-bold truncate">{item.itemName}</p>
-                          <p className="text-slate-500">{item.demandLevel} demand · peak {item.peakTime}</p>
+                          <p className="text-text-muted">{item.demandLevel} demand · peak {item.peakTime}</p>
                         </div>
-                        <span className="shrink-0 text-orange-600 font-extrabold">{prep?.suggestedPrepBeforePeak ?? item.projectedPortions} portions</span>
+                        <span className="shrink-0 text-primary font-extrabold">{prep?.suggestedPrepBeforePeak ?? item.projectedPortions} portions</span>
                       </div>
                     );
                   })}
-                  {aiOperations.demand.length === 0 && <p className="text-xs text-slate-500">No demand signal available yet.</p>}
+                  {aiOperations.demand.length === 0 && <p className="text-xs text-text-muted">No demand signal available yet.</p>}
                 </div>
-                <p className="text-[11px] text-slate-500 mt-3">{aiOperations.peak.recommendation}</p>
+                <p className="text-[11px] text-text-muted mt-3">{aiOperations.peak.recommendation}</p>
               </div>
 
-              <div className="bg-white text-slate-900 rounded-xl p-4">
+              <div className="bg-white text-text-primary rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-bold text-sm">Waste risk watchlist</h3>
                   <span className="text-[10px] text-slate-400">Turnover based</span>
                 </div>
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-border-subtle">
                   {aiOperations.waste.slice(0, 4).map((item) => (
                     <div key={item.itemName} className="py-2 flex items-center justify-between gap-3 text-xs">
                       <div className="min-w-0">
                         <p className="font-bold truncate">{item.itemName}</p>
-                        <p className="text-slate-500">{item.availableStock} in stock · {item.turnoverRate} turnover</p>
+                        <p className="text-text-muted">{item.availableStock} in stock · {item.turnoverRate} turnover</p>
                       </div>
-                      <span className={`shrink-0 font-extrabold ${item.wasteRisk === "High" ? "text-red-600" : item.wasteRisk === "Medium" ? "text-orange-600" : "text-emerald-600"}`}>{item.wasteRisk}</span>
+                      <span className={`shrink-0 font-extrabold ${item.wasteRisk === "High" ? "text-red-600" : item.wasteRisk === "Medium" ? "text-primary" : "text-emerald-600"}`}>{item.wasteRisk}</span>
                     </div>
                   ))}
-                  {aiOperations.waste.length === 0 && <p className="text-xs text-slate-500">No waste risk signal available yet.</p>}
+                  {aiOperations.waste.length === 0 && <p className="text-xs text-text-muted">No waste risk signal available yet.</p>}
                 </div>
               </div>
             </div>
@@ -579,28 +579,28 @@ export const ManagerDashboard: React.FC = () => {
       )}
 
       {/* Smart Queue Priority */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-border-subtle flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-slate-900">Smart Queue Priority</h2>
-            <p className="text-xs text-slate-500">Orders are ranked by delay risk, pickup urgency, size, and kitchen workload.</p>
+            <h2 className="text-base font-bold text-text-primary">Smart Queue Priority</h2>
+            <p className="text-xs text-text-muted">Orders are ranked by delay risk, pickup urgency, size, and kitchen workload.</p>
           </div>
           <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">{prioritizedQueue.length} active</span>
         </div>
         {prioritizedQueue.length === 0 ? (
-          <p className="text-sm text-slate-500">No active orders in the kitchen queue.</p>
+          <p className="text-sm text-text-muted">No active orders in the kitchen queue.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider">
+              <thead className="bg-surface-container-low text-text-muted uppercase font-bold text-[10px] tracking-wider">
                 <tr><th className="p-3">Priority</th><th className="p-3">Token</th><th className="p-3">Status</th><th className="p-3">Signals</th></tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border-subtle">
                 {prioritizedQueue.slice(0, 10).map((order: any, index) => (
                   <tr key={order._id || order.order_id || order.token_number}>
-                    <td className="p-3 font-extrabold text-orange-600">#{index + 1}</td>
-                    <td className="p-3 font-bold text-slate-900">{order.token_number}</td>
-                    <td className="p-3 text-slate-600">{order.order_status}</td>
+                    <td className="p-3 font-extrabold text-primary">#{index + 1}</td>
+                    <td className="p-3 font-bold text-text-primary">{order.token_number}</td>
+                    <td className="p-3 text-text-muted">{order.order_status}</td>
                     <td className="p-3 flex flex-wrap gap-1">
                       {order.is_delayed_risk && <span className="px-2 py-1 rounded-full bg-red-50 text-red-700 font-bold">Delay risk</span>}
                       {order.is_approaching_pickup && <span className="px-2 py-1 rounded-full bg-amber-50 text-amber-700 font-bold">Pickup soon</span>}
@@ -616,14 +616,14 @@ export const ManagerDashboard: React.FC = () => {
       {/* Grid: Inventory Manager & Slot Capacities */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Inventory & Price Control Table */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4">
+        <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-border-subtle flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900">
+            <h2 className="text-base font-bold text-text-primary">
               Menu Items, Prices & Stock Inventory
             </h2>
             <button
               onClick={handleOpenAddModal}
-              className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl flex items-center gap-1 shadow-sm"
+              className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl flex items-center gap-1 shadow-sm"
             >
               <span className="material-symbols-outlined text-[16px]">
                 add
@@ -634,7 +634,7 @@ export const ManagerDashboard: React.FC = () => {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
+              <thead className="bg-surface-container-low text-text-muted uppercase font-bold text-[10px] tracking-wider border-b border-border-strong">
                 <tr>
                   <th className="p-3">Item Name</th>
                   <th className="p-3">Category</th>
@@ -644,19 +644,19 @@ export const ManagerDashboard: React.FC = () => {
                   <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-border-subtle">
                 {menu.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50">
-                    <td className="p-3 font-bold text-slate-900 flex items-center gap-2">
+                  <tr key={item.id} className="hover:bg-surface-container-low">
+                    <td className="p-3 font-bold text-text-primary flex items-center gap-2">
                       <img
                         src={item.image}
                         alt={item.name}
-                        className="w-8 h-8 rounded-lg object-cover bg-slate-100"
+                        className="w-8 h-8 rounded-lg object-cover bg-surface-container-low"
                       />
                       <span>{item.name}</span>
                     </td>
-                    <td className="p-3 text-slate-600">{item.category}</td>
-                    <td className="p-3 font-extrabold text-slate-900">
+                    <td className="p-3 text-text-muted">{item.category}</td>
+                    <td className="p-3 font-extrabold text-text-primary">
                       Rs. {item.price.toFixed(2)}
                     </td>
                     <td className="p-3">
@@ -667,19 +667,19 @@ export const ManagerDashboard: React.FC = () => {
                           onChange={(e) =>
                             updateItemStock(item.id, parseInt(e.target.value) || 0)
                           }
-                          className="w-14 h-7 px-1.5 border border-slate-200 rounded text-xs font-bold text-center"
+                          className="w-14 h-7 px-1.5 border border-border-strong rounded text-xs font-bold text-center"
                         />
-                        <span className="text-[10px] text-slate-400">units</span>
+                        <span className="text-[10px] text-text-muted/70">units</span>
                       </div>
                     </td>
-                    <td className="p-3 text-slate-600">
+                    <td className="p-3 text-text-muted">
                       {item.preparationTime} mins
                     </td>
                     <td className="p-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleOpenEditModal(item)}
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg transition-colors flex items-center gap-1"
+                          className="px-2.5 py-1 bg-primary-container/60 hover:bg-primary-fixed text-on-primary-container font-bold rounded-lg border border-primary-fixed-dim transition-colors flex items-center gap-1"
                         >
                           <span className="material-symbols-outlined text-[14px]">
                             edit
@@ -706,16 +706,16 @@ export const ManagerDashboard: React.FC = () => {
         {/* 15-Min Pickup Slots Limits & Popular Items Ranking */}
         <div className="flex flex-col gap-6">
           {/* Pickup Slot Limits */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-3">
-            <h2 className="text-base font-bold text-slate-900">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-border-subtle flex flex-col gap-3">
+            <h2 className="text-base font-bold text-text-primary">
               15-Minute Slot Pickup Limits
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-text-muted">
               Set maximum order capacity per slot to prevent kitchen overload.
             </p>
 
             <div className="flex items-center gap-2">
-              <label htmlFor="slot-capacity" className="text-xs font-semibold text-slate-700">
+              <label htmlFor="slot-capacity" className="text-xs font-semibold text-text-primary">
                 Maximum orders per slot
               </label>
               <input
@@ -725,33 +725,33 @@ export const ManagerDashboard: React.FC = () => {
                 step="1"
                 value={slotCapacity}
                 onChange={(event) => setSlotCapacity(Number(event.target.value))}
-                className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-900"
+                className="w-20 rounded-lg border border-border-strong px-2 py-1.5 text-xs font-bold text-text-primary"
               />
               <button
                 type="button"
                 onClick={saveSlotCapacity}
                 disabled={isSavingSlotCapacity}
-                className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
               >
                 {isSavingSlotCapacity ? "Saving..." : "Save"}
               </button>
             </div>
 
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-border-subtle">
               {slots.map((slot) => (
                 <div
                   key={slot.id}
                   className="py-2.5 flex items-center justify-between text-xs"
                 >
                   <div className="flex flex-col">
-                    <span className="font-bold text-slate-900">
+                    <span className="font-bold text-text-primary">
                       {slot.timeSlot}
                     </span>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-text-muted/70">
                       {slot.stationName}
                     </span>
                   </div>
-                  <span className="font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">
+                  <span className="font-bold text-primary bg-primary-fixed px-2.5 py-1 rounded-full">
                     {slot.currentOrders} / {slot.maxCapacity} Max
                   </span>
                 </div>
@@ -760,20 +760,20 @@ export const ManagerDashboard: React.FC = () => {
           </div>
 
           {/* Top Selling Ranking */}
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-3">
-            <h2 className="text-base font-bold text-slate-900">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-border-subtle flex flex-col gap-3">
+            <h2 className="text-base font-bold text-text-primary">
               Top Selling Food Ranking
             </h2>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-border-subtle">
               {stats.popularItems.map((pop, idx) => (
                 <div
                   key={pop.name}
                   className="py-2 flex items-center justify-between text-xs font-bold"
                 >
-                  <span className="text-slate-800">
+                  <span className="text-text-primary">
                     #{idx + 1} {pop.name}
                   </span>
-                  <span className="text-slate-500">{pop.count} orders</span>
+                  <span className="text-text-muted">{pop.count} orders</span>
                 </div>
               ))}
             </div>
@@ -784,19 +784,19 @@ export const ManagerDashboard: React.FC = () => {
       ) : (
       /* Staff Management Tab View */
       <div className="flex flex-col gap-6 anim-fade-in">
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-border-strong flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-orange-600 text-[24px]">group</span>
-              <h2 className="text-lg font-bold text-slate-900">Kitchen Staff Roster</h2>
+              <span className="material-symbols-outlined text-primary text-[24px]">group</span>
+              <h2 className="text-lg font-bold text-text-primary">Kitchen Staff Roster</h2>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-text-muted mt-1">
               Managers have role-based authorization strictly to register and oversee Kitchen Staff members.
             </p>
           </div>
           <button
             onClick={handleOpenAddStaff}
-            className="px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-md active:scale-95 self-start md:self-auto transition-all"
+            className="px-4 py-2.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-md active:scale-95 self-start md:self-auto transition-all"
           >
             <span className="material-symbols-outlined text-[18px]">person_add</span>
             <span>Add Kitchen Staff Member</span>
@@ -804,13 +804,13 @@ export const ManagerDashboard: React.FC = () => {
         </div>
 
         {/* Staff Table / Cards */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700">Active Kitchen Crew ({staffList.length})</span>
+        <div className="bg-white rounded-2xl shadow-sm border border-border-strong overflow-hidden">
+          <div className="p-4 border-b border-border-subtle flex items-center justify-between">
+            <span className="text-xs font-bold text-text-primary">Active Kitchen Crew ({staffList.length})</span>
             <button
               onClick={fetchStaff}
               disabled={isLoadingStaff}
-              className="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1"
+              className="text-xs font-bold text-primary hover:text-primary-hover flex items-center gap-1"
             >
               <span className={`material-symbols-outlined text-[16px] ${isLoadingStaff ? "animate-spin" : ""}`}>
                 sync
@@ -820,17 +820,17 @@ export const ManagerDashboard: React.FC = () => {
           </div>
 
           {isLoadingStaff ? (
-            <div className="p-12 text-center text-slate-400 text-xs font-medium flex flex-col items-center gap-2">
-              <span className="material-symbols-outlined text-[32px] animate-spin text-orange-600">progress_activity</span>
+            <div className="p-12 text-center text-text-muted/70 text-xs font-medium flex flex-col items-center gap-2">
+              <span className="material-symbols-outlined text-[32px] animate-spin text-primary">progress_activity</span>
               <span>Loading kitchen staff directory...</span>
             </div>
           ) : staffList.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 text-xs flex flex-col items-center gap-2">
-              <span className="material-symbols-outlined text-[36px] text-slate-300">person_off</span>
-              <span className="font-semibold text-slate-600">No kitchen staff registered yet.</span>
+            <div className="p-12 text-center text-text-muted/70 text-xs flex flex-col items-center gap-2">
+              <span className="material-symbols-outlined text-[36px] text-text-muted/50">person_off</span>
+              <span className="font-semibold text-text-muted">No kitchen staff registered yet.</span>
               <button
                 onClick={handleOpenAddStaff}
-                className="mt-2 px-4 py-2 bg-orange-600 text-white text-xs font-bold rounded-xl"
+                className="mt-2 px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl"
               >
                 Add First Staff Member
               </button>
@@ -838,7 +838,7 @@ export const ManagerDashboard: React.FC = () => {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-500 uppercase font-bold text-[10px] border-b border-slate-200">
+                <thead className="bg-surface-container-low text-text-muted uppercase font-bold text-[10px] border-b border-border-strong">
                   <tr>
                     <th className="py-3 px-4">Staff Name</th>
                     <th className="py-3 px-4">Email Address</th>
@@ -848,19 +848,19 @@ export const ManagerDashboard: React.FC = () => {
                     <th className="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-border-subtle">
                   {staffList.map((staff: any) => (
-                    <tr key={staff._id || staff.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4 font-bold text-slate-900">
+                    <tr key={staff._id || staff.id} className="hover:bg-surface-container-low/80 transition-colors">
+                      <td className="py-3.5 px-4 font-bold text-text-primary">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-700 font-bold flex items-center justify-center text-xs">
+                          <div className="w-8 h-8 rounded-full bg-primary-fixed text-primary font-bold flex items-center justify-center text-xs">
                             {(staff.name || "K").charAt(0).toUpperCase()}
                           </div>
                           <span>{staff.name}</span>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 text-slate-600 font-medium">{staff.email}</td>
-                      <td className="py-3.5 px-4 text-slate-600">{staff.phone || "—"}</td>
+                      <td className="py-3.5 px-4 text-text-muted font-medium">{staff.email}</td>
+                      <td className="py-3.5 px-4 text-text-muted">{staff.phone || "—"}</td>
                       <td className="py-3.5 px-4">
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-200 flex items-center gap-1 w-max">
                           <span className="material-symbols-outlined text-[12px]">restaurant</span>
@@ -883,14 +883,14 @@ export const ManagerDashboard: React.FC = () => {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleOpenEditStaff(staff)}
-                            className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-text-muted hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="Edit Staff Member"
                           >
                             <span className="material-symbols-outlined text-[18px]">edit</span>
                           </button>
                           <button
                             onClick={() => handleDeleteStaff(staff._id || staff.id, staff.name)}
-                            className="p-1.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1.5 text-text-muted hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Remove Staff Member"
                           >
                             <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -909,18 +909,18 @@ export const ManagerDashboard: React.FC = () => {
 
       {/* Add / Edit Kitchen Staff Modal */}
       {isStaffModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4 anim-fade-in-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-orange-600 text-[22px]">badge</span>
-                <h3 className="font-extrabold text-base text-slate-900">
+                <span className="material-symbols-outlined text-primary text-[22px]">badge</span>
+                <h3 className="font-extrabold text-base text-text-primary">
                   {editingStaffId ? "Edit Kitchen Staff" : "Add Kitchen Staff Member"}
                 </h3>
               </div>
               <button
                 onClick={() => setIsStaffModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-text-muted"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -928,19 +928,19 @@ export const ManagerDashboard: React.FC = () => {
 
             <form onSubmit={handleSaveStaff} className="flex flex-col gap-3 text-xs">
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-slate-700">Staff Full Name</label>
+                <label className="font-bold text-text-primary">Staff Full Name</label>
                 <input
                   type="text"
                   value={staffForm.name}
                   onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
                   placeholder="e.g., Marcus Vance"
                   required
-                  className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                  className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                 />
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-slate-700">Email Address</label>
+                <label className="font-bold text-text-primary">Email Address</label>
                 <input
                   type="email"
                   value={staffForm.email}
@@ -948,14 +948,14 @@ export const ManagerDashboard: React.FC = () => {
                   onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
                   placeholder="e.g., marcus.staff@canteen.edu.pk"
                   required
-                  className={`h-10 px-3 border border-slate-200 rounded-xl font-medium ${
-                    editingStaffId ? "bg-slate-100 text-slate-500 cursor-not-allowed" : ""
+                  className={`h-10 px-3 border border-border-strong rounded-xl font-medium ${
+                    editingStaffId ? "bg-surface-container-low text-text-muted cursor-not-allowed" : ""
                   }`}
                 />
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-slate-700">
+                <label className="font-bold text-text-primary">
                   {editingStaffId ? "New Password (leave blank to keep current)" : "Password"}
                 </label>
                 <input
@@ -964,28 +964,28 @@ export const ManagerDashboard: React.FC = () => {
                   onChange={(e) => setStaffForm({ ...staffForm, password: e.target.value })}
                   placeholder={editingStaffId ? "••••••••" : "Min 6 characters"}
                   required={!editingStaffId}
-                  className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                  className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-slate-700">Phone Number</label>
+                  <label className="font-bold text-text-primary">Phone Number</label>
                   <input
                     type="tel"
                     value={staffForm.phone}
                     onChange={(e) => setStaffForm({ ...staffForm, phone: e.target.value })}
                     placeholder="+923001234567"
-                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                    className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-slate-700">Account Status</label>
+                  <label className="font-bold text-text-primary">Account Status</label>
                   <select
                     value={staffForm.account_status}
                     onChange={(e) => setStaffForm({ ...staffForm, account_status: e.target.value })}
-                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium bg-white"
+                    className="h-10 px-3 border border-border-strong rounded-xl font-medium bg-white"
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
@@ -998,17 +998,17 @@ export const ManagerDashboard: React.FC = () => {
                 <span>Role is automatically locked to <strong>Kitchen Staff</strong> for canteen security.</span>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 mt-2">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border-subtle mt-2">
                 <button
                   type="button"
                   onClick={() => setIsStaffModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl"
+                  className="px-4 py-2 bg-primary-container text-on-primary-container font-bold rounded-xl border border-primary-fixed-dim hover:bg-primary-fixed transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-orange-600 text-white font-bold rounded-xl shadow-md hover:bg-orange-500"
+                  className="px-5 py-2 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-primary-hover"
                 >
                   {editingStaffId ? "Update Staff" : "Add Staff"}
                 </button>
@@ -1020,15 +1020,15 @@ export const ManagerDashboard: React.FC = () => {
 
       {/* Edit / Add Menu Item Modal */}
       {isModalOpen && editingItem && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl flex flex-col gap-4 anim-fade-in-up">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-extrabold text-base text-slate-900">
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+              <h3 className="font-extrabold text-base text-text-primary">
                 {editingItem.id ? "Edit Menu Item Details" : "Create New Menu Item"}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-text-muted"
               >
                 <span className="material-symbols-outlined text-[20px]">
                   close
@@ -1038,7 +1038,7 @@ export const ManagerDashboard: React.FC = () => {
 
             <form onSubmit={handleSaveModal} className="flex flex-col gap-3 text-xs">
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-slate-700">Food Item Name</label>
+                <label className="font-bold text-text-primary">Food Item Name</label>
                 <input
                   type="text"
                   value={editingItem.name || ""}
@@ -1046,19 +1046,19 @@ export const ManagerDashboard: React.FC = () => {
                     setEditingItem({ ...editingItem, name: e.target.value })
                   }
                   required
-                  className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                  className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-slate-700">Category</label>
+                  <label className="font-bold text-text-primary">Category</label>
                   <select
                     value={editingItem.category || "Burgers"}
                     onChange={(e) =>
                       setEditingItem({ ...editingItem, category: e.target.value })
                     }
-                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium bg-white"
+                    className="h-10 px-3 border border-border-strong rounded-xl font-medium bg-white"
                   >
                     <option value="Burgers">Burgers</option>
                     <option value="Meals">Meals</option>
@@ -1069,7 +1069,7 @@ export const ManagerDashboard: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-slate-700">Price (Rs.)</label>
+                  <label className="font-bold text-text-primary">Price (Rs.)</label>
                   <input
                     type="number"
                     step="0.1"
@@ -1081,14 +1081,14 @@ export const ManagerDashboard: React.FC = () => {
                       })
                     }
                     required
-                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                    className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-slate-700">Available Stock</label>
+                  <label className="font-bold text-text-primary">Available Stock</label>
                   <input
                     type="number"
                     value={editingItem.availableQuantity ?? 15}
@@ -1099,12 +1099,12 @@ export const ManagerDashboard: React.FC = () => {
                       })
                     }
                     required
-                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                    className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="font-bold text-slate-700">
+                  <label className="font-bold text-text-primary">
                     Prep Time (Mins)
                   </label>
                   <input
@@ -1117,13 +1117,13 @@ export const ManagerDashboard: React.FC = () => {
                       })
                     }
                     required
-                    className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                    className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-slate-700">Image URL</label>
+                <label className="font-bold text-text-primary">Image URL</label>
                 <input
                   type="text"
                   value={editingItem.image || ""}
@@ -1131,12 +1131,12 @@ export const ManagerDashboard: React.FC = () => {
                     setEditingItem({ ...editingItem, image: e.target.value })
                   }
                   required
-                  className="h-10 px-3 border border-slate-200 rounded-xl font-medium"
+                  className="h-10 px-3 border border-border-strong rounded-xl font-medium"
                 />
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="font-bold text-slate-700">Description</label>
+                <label className="font-bold text-text-primary">Description</label>
                 <textarea
                   value={editingItem.description || ""}
                   onChange={(e) =>
@@ -1146,7 +1146,7 @@ export const ManagerDashboard: React.FC = () => {
                     })
                   }
                   rows={2}
-                  className="p-3 border border-slate-200 rounded-xl font-medium"
+                  className="p-3 border border-border-strong rounded-xl font-medium"
                 ></textarea>
               </div>
 
@@ -1161,24 +1161,24 @@ export const ManagerDashboard: React.FC = () => {
                       isVegetarian: e.target.checked,
                     })
                   }
-                  className="w-4 h-4 accent-orange-600 rounded"
+                  className="w-4 h-4 accent-primary rounded"
                 />
-                <label htmlFor="veg-check" className="font-bold text-slate-700">
+                <label htmlFor="veg-check" className="font-bold text-text-primary">
                   Vegetarian Friendly
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 mt-2">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border-subtle mt-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-xl"
+                  className="px-4 py-2 bg-primary-container text-on-primary-container font-bold rounded-xl border border-primary-fixed-dim hover:bg-primary-fixed transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-orange-600 text-white font-bold rounded-xl shadow-md hover:bg-orange-500"
+                  className="px-5 py-2 bg-primary text-white font-bold rounded-xl shadow-md hover:bg-primary-hover"
                 >
                   Save Item
                 </button>
@@ -1192,9 +1192,9 @@ export const ManagerDashboard: React.FC = () => {
 };
 
 const AnalyticsValue: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
-  <div className="bg-white rounded-xl p-4 border border-slate-100 shadow-sm">
-    <span className="text-[11px] text-slate-500 font-medium">{label}</span>
-    <span className="mt-1 block text-sm font-extrabold text-slate-900 truncate">{value}</span>
+  <div className="bg-white rounded-xl p-4 border border-border-subtle shadow-sm">
+    <span className="text-[11px] text-text-muted font-medium">{label}</span>
+    <span className="mt-1 block text-sm font-extrabold text-text-primary truncate">{value}</span>
   </div>
 );
 
@@ -1203,20 +1203,20 @@ const ReportList: React.FC<{
   rows: { label: string; value: string }[];
   footer?: string;
 }> = ({ title, rows, footer }) => (
-  <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-    <h2 className="text-base font-bold text-slate-900">{title}</h2>
-    <div className="mt-3 divide-y divide-slate-100">
+  <div className="bg-white rounded-2xl p-5 shadow-sm border border-border-subtle">
+    <h2 className="text-base font-bold text-text-primary">{title}</h2>
+    <div className="mt-3 divide-y divide-border-subtle">
       {rows.length === 0 ? (
-        <p className="py-3 text-xs text-slate-500">No data available.</p>
+        <p className="py-3 text-xs text-text-muted">No data available.</p>
       ) : (
         rows.map((row) => (
           <div key={`${row.label}-${row.value}`} className="py-2 flex items-center justify-between gap-3 text-xs">
-            <span className="font-semibold text-slate-700 truncate">{row.label}</span>
-            <span className="font-bold text-slate-900 text-right">{row.value}</span>
+            <span className="font-semibold text-text-primary truncate">{row.label}</span>
+            <span className="font-bold text-text-primary text-right">{row.value}</span>
           </div>
         ))
       )}
     </div>
-    {footer && <p className="mt-3 pt-3 border-t border-slate-100 text-xs font-bold text-orange-600">{footer}</p>}
+    {footer && <p className="mt-3 pt-3 border-t border-border-subtle text-xs font-bold text-primary">{footer}</p>}
   </div>
 );

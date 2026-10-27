@@ -7,8 +7,6 @@ import { MenuItem } from "../app/types";
 import { aiAPI } from "../app/lib/api";
 import { getMenuImage } from "../app/lib/image";
 
-const FALLBACK_MENU_IMAGE = "/menu-fallback.svg";
-
 export const CustomerHome: React.FC = () => {
   const { menu, addToCart, cartCount, cartTotal, preferences, isAuthenticated, promptLogin } = useApp();
   const router = useRouter();
@@ -124,10 +122,10 @@ export const CustomerHome: React.FC = () => {
   return (
     <div className="flex flex-col w-full pb-32">
       {/* Sticky Search & Quick Filter Bar */}
-      <div className="sticky top-16 md:top-20 z-40 bg-white/95 backdrop-blur-md px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-100 shadow-sm flex flex-col gap-2">
+      <div className="sticky top-16 md:top-20 z-40 bg-white/90 backdrop-blur-md px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border-subtle shadow-sm flex flex-col gap-2">
         <div className="flex items-center gap-1.5 sm:gap-2 max-w-7xl mx-auto w-full">
           <div className="relative flex-1 flex items-center group">
-            <span className="material-symbols-outlined absolute left-3.5 text-slate-400 text-[22px] pointer-events-none group-focus-within:text-orange-600 transition-colors">
+            <span className="material-symbols-outlined absolute left-3.5 text-text-muted/70 text-[22px] pointer-events-none group-focus-within:text-primary transition-colors">
               search
             </span>
             <input
@@ -135,12 +133,12 @@ export const CustomerHome: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search burgers, drinks, snacks, meals..."
-              className="w-full h-12 pl-11 pr-4 bg-slate-100/80 text-slate-900 placeholder:text-slate-400 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:bg-white transition-all"
+              className="w-full h-12 pl-11 pr-4 bg-surface-container-low text-text-primary placeholder:text-text-muted/70 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 text-text-muted/70 hover:text-text-primary"
               >
                 <span className="material-symbols-outlined text-[18px]">
                   close
@@ -151,13 +149,13 @@ export const CustomerHome: React.FC = () => {
           <button
             onClick={() => router.push("/preferences")}
             title="Dietary Preferences & Filters"
-            className="w-12 h-12 shrink-0 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-200 transition-all relative active:scale-95"
+            className="w-12 h-12 shrink-0 rounded-xl bg-primary-container flex items-center justify-center text-on-primary-container border border-primary-fixed-dim hover:bg-primary-fixed transition-all relative active:scale-95"
           >
             <span className="material-symbols-outlined text-[24px]">
               tune
             </span>
             {(preferences.vegetarianOnly || preferences.veganOnly) && (
-              <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-orange-600 ring-2 ring-white"></span>
+              <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-white"></span>
             )}
           </button>
         </div>
@@ -170,8 +168,8 @@ export const CustomerHome: React.FC = () => {
             }
             className={`inline-flex items-center gap-1 h-8 px-3.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
               activeFilter === "fast"
-                ? "bg-orange-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                ? "bg-primary text-white shadow-sm"
+                : "bg-primary-container/50 text-on-primary-container hover:bg-primary-fixed"
             }`}
           >
             <span>⚡ Fast Prep (&lt;10m)</span>
@@ -182,8 +180,8 @@ export const CustomerHome: React.FC = () => {
             }
             className={`inline-flex items-center gap-1 h-8 px-3.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
               activeFilter === "veg"
-                ? "bg-orange-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                ? "bg-primary text-white shadow-sm"
+                : "bg-primary-container/50 text-on-primary-container hover:bg-primary-fixed"
             }`}
           >
             <span>🌱 Vegetarian</span>
@@ -194,8 +192,8 @@ export const CustomerHome: React.FC = () => {
             }
             className={`inline-flex items-center gap-1 h-8 px-3.5 rounded-full text-xs font-semibold shrink-0 transition-all ${
               activeFilter === "cheap"
-                ? "bg-orange-600 text-white shadow-sm"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                ? "bg-primary text-white shadow-sm"
+                : "bg-primary-container/50 text-on-primary-container hover:bg-primary-fixed"
             }`}
           >
               <span>🏷️ Under 500</span>
@@ -203,7 +201,7 @@ export const CustomerHome: React.FC = () => {
           {activeFilter && (
             <button
               onClick={() => setActiveFilter(null)}
-              className="text-xs text-orange-600 font-bold underline px-2 shrink-0"
+              className="text-xs text-primary font-bold underline px-2 shrink-0"
             >
               Clear Filter
             </button>
@@ -211,19 +209,19 @@ export const CustomerHome: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 max-w-7xl mx-auto w-full">
-          <select value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700">
+          <select value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} className="h-9 px-3 rounded-lg border border-border-strong bg-white text-xs font-semibold text-text-muted">
             <option value="">Any price</option>
             <option value="500">Under 500</option>
             <option value="1000">Under 1,000</option>
             <option value="2000">Under 2,000</option>
           </select>
-          <select value={availability} onChange={(e) => setAvailability(e.target.value)} className="h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700">
+          <select value={availability} onChange={(e) => setAvailability(e.target.value)} className="h-9 px-3 rounded-lg border border-border-strong bg-white text-xs font-semibold text-text-muted">
             <option value="All">Any availability</option>
             <option value="Available">Available</option>
             <option value="Limited">Limited</option>
             <option value="Sold Out">Sold out</option>
           </select>
-          <select value={maxPrepTime} onChange={(e) => setMaxPrepTime(e.target.value)} className="h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700">
+          <select value={maxPrepTime} onChange={(e) => setMaxPrepTime(e.target.value)} className="h-9 px-3 rounded-lg border border-border-strong bg-white text-xs font-semibold text-text-muted">
             <option value="">Any prep time</option>
             <option value="5">Up to 5 min</option>
             <option value="10">Up to 10 min</option>
@@ -243,19 +241,19 @@ export const CustomerHome: React.FC = () => {
               </span>
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="font-bold text-sm text-slate-900 truncate">
+              <span className="font-bold text-sm text-text-primary truncate">
                 Lunch Rush Hour Active (1:00 PM – 2:00 PM)
               </span>
-              <span className="text-xs text-slate-500 truncate">
+              <span className="text-xs text-text-muted truncate">
                 Counter Station B average pickup prep: ~6 mins
               </span>
             </div>
           </div>
           <button
             onClick={() => router.push("/live-order")}
-            className="shrink-0 text-xs font-bold text-orange-600 hover:underline flex items-center gap-0.5"
+            className="shrink-0 text-xs font-bold text-primary hover:underline flex items-center gap-0.5"
           >
-            <span>View Queue</span>
+            <span>Check Wait</span>
             <span className="material-symbols-outlined text-[16px]">
               chevron_right
             </span>
@@ -263,16 +261,16 @@ export const CustomerHome: React.FC = () => {
         </div>
 
         {isAuthenticated && recommendedMenu.length > 0 && (
-          <section className="bg-slate-900 rounded-2xl p-4 text-white shadow-lg border border-slate-800">
+          <section className="bg-inverse-surface rounded-2xl p-4 text-white shadow-lg border border-white/10">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="material-symbols-outlined text-orange-400">auto_awesome</span>
+                <span className="material-symbols-outlined text-primary-fixed-dim">auto_awesome</span>
                 <div className="min-w-0">
-                  <h2 className="font-extrabold text-sm truncate">Recommended for you</h2>
-                  <p className="text-[11px] text-slate-400 truncate">AI picks from {recommendationCategory}</p>
+                  <h2 className="font-headline font-semibold text-base truncate">Chef&apos;s Picks</h2>
+                  <p className="text-[11px] text-white/60 truncate">Popular in {recommendationCategory}</p>
                 </div>
               </div>
-              <span className="text-[10px] uppercase tracking-wider font-bold text-orange-300 shrink-0">Smart picks</span>
+              <span className="text-[10px] uppercase tracking-wider font-bold text-primary-fixed-dim shrink-0">Today&apos;s favourites</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {recommendedMenu.slice(0, 4).map((item) => (
@@ -284,7 +282,7 @@ export const CustomerHome: React.FC = () => {
                   />
                   <div className="min-w-0">
                     <p className="text-xs font-bold truncate">{item.name}</p>
-                    <p className="text-[11px] text-slate-300">Rs. {item.price.toFixed(0)}</p>
+                    <p className="text-[11px] text-white/70">Rs. {item.price.toFixed(0)}</p>
                   </div>
                   <button
                     onClick={() => {
@@ -294,7 +292,7 @@ export const CustomerHome: React.FC = () => {
                       }
                       addToCart(item);
                     }}
-                    className="w-full py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-[11px] font-bold flex items-center justify-center gap-1"
+                    className="w-full py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-[11px] font-bold flex items-center justify-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[14px]">add</span>
                     Add to cart
@@ -314,8 +312,8 @@ export const CustomerHome: React.FC = () => {
                 onClick={() => setSelectedCategory(cat)}
                 className={`h-10 px-4 rounded-full text-xs font-bold shrink-0 transition-all ${
                   selectedCategory === cat
-                    ? "bg-slate-900 text-white shadow-md"
-                    : "bg-white text-slate-700 hover:bg-slate-100 shadow-sm border border-slate-100"
+                    ? "bg-primary text-white shadow-md"
+                    : "bg-primary-container/50 text-on-primary-container hover:bg-primary-fixed shadow-sm border border-primary-fixed-dim"
                 }`}
               >
                 {cat}
@@ -329,10 +327,10 @@ export const CustomerHome: React.FC = () => {
           {filteredMenu.map((item: MenuItem) => (
             <div
               key={item.id}
-              className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex flex-col justify-between interactive-card group relative"
+              className="bg-white rounded-2xl p-4 shadow-sm border border-border-subtle flex flex-col justify-between interactive-card group relative"
             >
               {/* Top Item Badges */}
-              <div className="relative w-full h-44 rounded-xl overflow-hidden mb-3 bg-slate-100">
+              <div className="relative w-full h-44 rounded-xl overflow-hidden mb-3 bg-surface-container-low">
                 <img
                   src={getMenuImage(item.image, item.category, item.name)}
                   alt={item.name}
@@ -353,7 +351,7 @@ export const CustomerHome: React.FC = () => {
                 </div>
 
                 <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-md text-white px-2 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[13px] text-orange-400">
+                  <span className="material-symbols-outlined text-[13px] text-primary-fixed-dim">
                     schedule
                   </span>
                   <span>{item.preparationTime}m prep</span>
@@ -363,30 +361,30 @@ export const CustomerHome: React.FC = () => {
               {/* Item Info */}
               <div className="flex flex-col flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-bold text-slate-900 text-base group-hover:text-orange-600 transition-colors">
+                  <h3 className="font-headline font-semibold text-text-primary text-base group-hover:text-primary transition-colors">
                     {item.name}
                   </h3>
-                  <span className="font-extrabold text-slate-900 text-base">
+                  <span className="font-extrabold text-text-primary text-base">
                     Rs. {item.price.toFixed(2)}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                <p className="text-xs text-text-muted mt-1 line-clamp-2">
                   {item.description}
                 </p>
               </div>
 
               {/* Stock Status & Add to Cart */}
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-between mt-4 pt-3 border-t border-border-subtle">
                 <div className="flex flex-col">
-                  <span className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">
+                  <span className="text-[11px] text-text-muted/70 uppercase font-bold tracking-wider">
                     Stock Level
                   </span>
                   <span
                     className={`text-xs font-bold ${
                       item.status === "Sold Out"
-                        ? "text-slate-400 line-through"
+                        ? "text-text-muted/70 line-through"
                         : item.status === "Limited"
-                        ? "text-orange-600"
+                        ? "text-primary"
                         : "text-emerald-700"
                     }`}
                   >
@@ -407,8 +405,8 @@ export const CustomerHome: React.FC = () => {
                   disabled={item.status === "Sold Out"}
                   className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
                     item.status === "Sold Out"
-                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                      : "bg-orange-600 hover:bg-orange-700 text-white shadow-md active:scale-95"
+                      ? "bg-status-soldout-bg text-status-soldout-text cursor-not-allowed"
+                      : "bg-primary hover:bg-primary-hover text-white shadow-md active:scale-95"
                   }`}
                 >
                   <span className="material-symbols-outlined text-[16px]">
@@ -422,14 +420,14 @@ export const CustomerHome: React.FC = () => {
         </div>
 
         {filteredMenu.length === 0 && (
-          <div className="py-16 text-center flex flex-col items-center justify-center text-slate-400">
-            <span className="material-symbols-outlined text-[48px] text-slate-300 mb-2">
+          <div className="py-16 text-center flex flex-col items-center justify-center text-text-muted">
+            <span className="material-symbols-outlined text-[48px] text-text-muted/50 mb-2">
               no_food
             </span>
-            <p className="text-base font-bold text-slate-700">
+            <p className="text-base font-bold text-text-primary">
               No matching food items found
             </p>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-text-muted mt-1">
               Try adjusting your search or dietary filter chips.
             </p>
           </div>
@@ -439,13 +437,13 @@ export const CustomerHome: React.FC = () => {
       {/* Floating Bottom Cart Bar */}
       {cartCount > 0 && (
         <div className="fixed bottom-16 md:bottom-4 left-3 right-3 sm:left-4 sm:right-4 z-40 max-w-2xl mx-auto">
-          <div className="bg-slate-900 text-white p-2.5 sm:p-3 px-3 sm:px-5 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-800 anim-fade-in-up gap-2">
+          <div className="bg-inverse-surface text-white p-2.5 sm:p-3 px-3 sm:px-5 rounded-2xl shadow-2xl flex items-center justify-between border border-white/10 anim-fade-in-up gap-2">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-orange-600 flex items-center justify-center text-white font-bold text-sm shadow-inner cart-wiggling shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-sm shadow-inner cart-wiggling shrink-0">
                 {cartCount}
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-[10px] sm:text-xs text-slate-400 font-semibold uppercase truncate">
+                <span className="text-[10px] sm:text-xs text-white/60 font-semibold uppercase truncate">
                   Basket Total
                 </span>
                 <span className="font-extrabold text-base sm:text-lg text-white">
@@ -456,7 +454,7 @@ export const CustomerHome: React.FC = () => {
 
             <button
               onClick={() => router.push("/cart")}
-              className="bg-orange-600 hover:bg-orange-500 text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-all shadow-md active:scale-95 shrink-0 whitespace-nowrap"
+              className="bg-primary hover:bg-primary-hover text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1 sm:gap-1.5 transition-all shadow-md active:scale-95 shrink-0 whitespace-nowrap"
             >
               <span className="hidden sm:inline">Review & Select Slot</span>
               <span className="sm:hidden">Checkout</span>

@@ -379,8 +379,8 @@ export const KitchenDashboard: React.FC = () => {
     <div className="max-w-7xl mx-auto w-full px-3 sm:px-4 pt-3 sm:pt-4 pb-32 flex flex-col gap-4 sm:gap-6">
       {/* Optical / Digital Scanner Modal */}
       {isScannerModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 shadow-2xl flex flex-col gap-5 relative overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-inverse-surface/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-inverse-surface border border-white/10 rounded-3xl w-full max-w-lg p-6 shadow-2xl flex flex-col gap-5 relative overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -400,14 +400,14 @@ export const KitchenDashboard: React.FC = () => {
               </div>
               <button
                 onClick={closeScannerModal}
-                className="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
               >
                 ✕
               </button>
             </div>
 
             {/* Live Camera / Scanner Viewport View */}
-            <div className="relative w-full h-56 bg-slate-950 rounded-2xl border-2 border-dashed border-emerald-500/40 flex flex-col items-center justify-center p-4 overflow-hidden">
+            <div className="relative w-full h-56 bg-inverse-surface rounded-2xl border-2 border-dashed border-emerald-500/40 flex flex-col items-center justify-center p-4 overflow-hidden">
               {/* Live video feed — kept mounted so the ref is stable; hidden until active */}
               <video
                 ref={videoRef}
@@ -429,7 +429,7 @@ export const KitchenDashboard: React.FC = () => {
 
               {scannerStatus === "scanning" ? (
                 <div className="absolute bottom-3 inset-x-0 z-10 flex justify-center">
-                  <span className="text-[11px] font-mono font-bold text-emerald-300 bg-slate-950/70 px-3 py-1 rounded-full">
+                  <span className="text-[11px] font-mono font-bold text-emerald-300 bg-black/30 px-3 py-1 rounded-full">
                     CAMERA LIVE — POINT AT CUSTOMER QR
                   </span>
                 </div>
@@ -457,8 +457,8 @@ export const KitchenDashboard: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-3 text-center">
-                  <div className="w-28 h-28 border border-slate-700/60 rounded-xl flex items-center justify-center p-2 bg-slate-900/50">
-                    <span className="material-symbols-outlined text-[40px] text-slate-600">
+                  <div className="w-28 h-28 border border-white/10 rounded-xl flex items-center justify-center p-2 bg-black/20">
+                    <span className="material-symbols-outlined text-[40px] text-text-muted">
                       qr_code_2
                     </span>
                   </div>
@@ -476,7 +476,7 @@ export const KitchenDashboard: React.FC = () => {
                   <button
                     type="button"
                     onClick={stopCamera}
-                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold hover:bg-slate-700 flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-white/10 text-slate-200 text-xs font-bold hover:bg-white/15 flex items-center gap-1.5"
                   >
                     <span className="material-symbols-outlined text-[16px]">stop_circle</span>
                     Stop Camera
@@ -484,7 +484,7 @@ export const KitchenDashboard: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => startCamera(activeCameraId)}
-                    className="px-4 py-2 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold hover:bg-slate-700 flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-white/10 text-slate-200 text-xs font-bold hover:bg-white/15 flex items-center gap-1.5"
                   >
                     <span className="material-symbols-outlined text-[16px]">restart_alt</span>
                     Restart
@@ -506,7 +506,7 @@ export const KitchenDashboard: React.FC = () => {
                 <select
                   value={activeCameraId}
                   onChange={(e) => startCamera(e.target.value)}
-                  className="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold outline-none focus:border-emerald-500"
+                  className="px-3 py-2 rounded-xl bg-white/10 border border-white/15 text-slate-200 text-xs font-bold outline-none focus:border-emerald-500"
                 >
                   {cameraDevices.map((d, i) => (
                     <option key={d.deviceId || i} value={d.deviceId}>
@@ -527,7 +527,7 @@ export const KitchenDashboard: React.FC = () => {
                     <button
                       key={ord.id}
                       onClick={() => simulateOpticalScan(ord.tokenNumber)}
-                      className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-600/30 text-emerald-400 border border-slate-700 text-xs font-mono font-bold transition-all flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-emerald-600/30 text-emerald-400 border border-white/15 text-xs font-mono font-bold transition-all flex items-center gap-1"
                     >
                       <span className="material-symbols-outlined text-[14px]">
                         qr_code
@@ -536,7 +536,7 @@ export const KitchenDashboard: React.FC = () => {
                     </button>
                   ))}
                   {orders.every((o) => o.status !== "Ready") && (
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-text-muted">
                       No orders are Ready for collection yet.
                     </span>
                   )}
@@ -550,7 +550,7 @@ export const KitchenDashboard: React.FC = () => {
                 value={scanTokenInput}
                 onChange={(e) => setScanTokenInput(e.target.value)}
                 placeholder="Type Token (e.g. C-023 or Order ID)..."
-                className="flex-1 h-11 px-4 bg-slate-950 border border-slate-700 text-white placeholder:text-slate-500 rounded-xl text-sm font-mono outline-none focus:border-emerald-500"
+                className="flex-1 h-11 px-4 bg-inverse-surface border border-white/15 text-white placeholder:text-white/40 rounded-xl text-sm font-mono outline-none focus:border-emerald-500"
               />
               <button
                 type="submit"
@@ -606,7 +606,7 @@ export const KitchenDashboard: React.FC = () => {
       )}
 
       {/* Kitchen Banner Header */}
-      <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-6 shadow-xl border border-slate-800 flex flex-col gap-3 md:flex-row items-start md:items-center justify-between md:gap-4">
+      <div className="bg-inverse-surface text-white rounded-2xl p-4 sm:p-6 shadow-xl border border-white/10 flex flex-col gap-3 md:flex-row items-start md:items-center justify-between md:gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-md">
             <span className="material-symbols-outlined text-[28px]">
@@ -620,7 +620,7 @@ export const KitchenDashboard: React.FC = () => {
               </h1>
               <span className="bg-emerald-500/20 text-emerald-400 font-bold text-[10px] uppercase px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                Socket.io Live Sync
+                Live Kitchen Updates
               </span>
             </div>
             <span className="text-xs text-slate-400">
@@ -646,11 +646,11 @@ export const KitchenDashboard: React.FC = () => {
         </div>
       </div>
 
-      <section className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-100">
+      <section className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-border-subtle">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <h2 className="text-base font-extrabold text-slate-900">Today&apos;s Pickup Slots</h2>
-            <p className="text-xs text-slate-500">
+            <h2 className="text-base font-extrabold text-text-primary">Today&apos;s Pickup Slots</h2>
+            <p className="text-xs text-text-muted">
               Completed orders free capacity automatically. Deallocate releases stale
               reservations once no active order depends on the slot.
             </p>
@@ -659,14 +659,14 @@ export const KitchenDashboard: React.FC = () => {
             <button
               type="button"
               onClick={resetPickupSlots}
-              className="px-3 py-2 rounded-lg bg-orange-600 text-xs font-bold text-white hover:bg-orange-500"
+              className="px-3 py-2 rounded-lg bg-primary text-xs font-bold text-white hover:bg-primary-hover"
             >
               Reset All Slots
             </button>
             <button
               type="button"
               onClick={refreshPickupSlots}
-              className="px-3 py-2 rounded-lg bg-slate-100 text-xs font-bold text-slate-700 hover:bg-slate-200"
+              className="px-3 py-2 rounded-lg bg-primary-container text-xs font-bold text-on-primary-container border border-primary-fixed-dim hover:bg-primary-fixed"
             >
               Refresh
             </button>
@@ -674,14 +674,14 @@ export const KitchenDashboard: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {pickupSlots.map((slot) => (
-            <div key={slot.slot} className="rounded-xl border border-slate-200 p-3">
+            <div key={slot.slot} className="rounded-xl border border-border-strong p-3">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-800">{slot.slot}</span>
+                <span className="font-bold text-text-primary">{slot.slot}</span>
                 <span className={`text-[10px] font-bold ${slot.status === "Full" ? "text-red-600" : "text-emerald-600"}`}>
                   {slot.status}
                 </span>
               </div>
-              <div className="text-xs text-slate-500 mt-1">
+              <div className="text-xs text-text-muted mt-1">
                 {slot.booked}/{slot.capacity} booked · {slot.remaining} available
               </div>
               <button
@@ -689,7 +689,7 @@ export const KitchenDashboard: React.FC = () => {
                 onClick={() => deallocatePickupSlot(slot.slot)}
                 disabled={slot.booked === 0}
                 title="Release stale reservations for this slot. Active orders must be completed or cancelled first."
-                className="mt-3 w-full rounded-lg bg-orange-100 px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-200 disabled:cursor-not-allowed disabled:opacity-40"
+                className="mt-3 w-full rounded-lg bg-primary-fixed px-3 py-2 text-xs font-bold text-primary hover:bg-primary-fixed disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Deallocate Slot
               </button>
@@ -704,24 +704,24 @@ export const KitchenDashboard: React.FC = () => {
         <div className="lg:col-span-2 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm sm:text-base font-bold text-slate-900">
+              <h2 className="text-sm sm:text-base font-bold text-text-primary">
                 Live Kitchen Queue
               </h2>
-              <span className="bg-orange-100 text-orange-800 font-extrabold text-xs px-2.5 py-0.5 rounded-full">
+              <span className="bg-primary-fixed text-on-primary-fixed-variant font-extrabold text-xs px-2.5 py-0.5 rounded-full">
                 {filteredOrders.length} Orders
               </span>
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-xl overflow-x-auto no-scrollbar">
               {["Active", "Preparing", "Ready", "Completed"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setSelectedFilter(tab)}
                   className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                     selectedFilter === tab
-                      ? "bg-white text-slate-900 shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
+                      ? "bg-primary text-white shadow-sm"
+                      : "bg-primary-container/50 text-on-primary-container hover:bg-primary-fixed"
                   }`}
                 >
                   {tab}
@@ -731,11 +731,11 @@ export const KitchenDashboard: React.FC = () => {
           </div>
 
           {filteredOrders.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center border border-slate-100 text-slate-400">
-              <span className="material-symbols-outlined text-[48px] text-slate-300 mb-2">
+            <div className="bg-white rounded-2xl p-12 text-center border border-border-subtle text-text-muted/70">
+              <span className="material-symbols-outlined text-[48px] text-text-muted/50 mb-2">
                 check_circle
               </span>
-              <p className="font-bold text-slate-700 text-sm">
+              <p className="font-bold text-text-primary text-sm">
                 No orders in this queue filter
               </p>
             </div>
@@ -744,7 +744,7 @@ export const KitchenDashboard: React.FC = () => {
               {filteredOrders.map((order) => (
                 <div
                   key={order.id}
-                  className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-4 relative overflow-hidden"
+                  className="bg-white rounded-2xl p-5 shadow-sm border border-border-subtle flex flex-col gap-4 relative overflow-hidden"
                 >
                   {/* Status Banner Stripe */}
                   <div
@@ -752,23 +752,23 @@ export const KitchenDashboard: React.FC = () => {
                       order.status === "Ready"
                         ? "bg-emerald-500"
                         : order.status === "Preparing"
-                        ? "bg-orange-500"
+                        ? "bg-primary"
                         : "bg-blue-500"
                     }`}
                   ></div>
 
                   <div className="flex items-start justify-between gap-3 pt-1">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-900 text-orange-400 font-extrabold text-base flex items-center justify-center font-headline shadow-md">
+                      <div className="w-12 h-12 rounded-2xl bg-inverse-surface text-primary-fixed-dim font-extrabold text-base flex items-center justify-center font-headline shadow-md">
                         {order.tokenNumber}
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-extrabold text-slate-900 text-sm">
+                        <span className="font-extrabold text-text-primary text-sm">
                           {order.customerName}
                         </span>
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-text-muted">
                           Ordered: {order.orderTime} • Pickup Slot:{" "}
-                          <strong className="text-slate-900">
+                          <strong className="text-text-primary">
                             {order.pickupSlot}
                           </strong>
                         </span>
@@ -795,7 +795,7 @@ export const KitchenDashboard: React.FC = () => {
                           order.status === "Ready"
                             ? "bg-emerald-100 text-emerald-800"
                             : order.status === "Preparing"
-                            ? "bg-orange-100 text-orange-800"
+                            ? "bg-primary-fixed text-on-primary-fixed-variant"
                             : "bg-blue-100 text-blue-800"
                         }`}
                       >
@@ -805,13 +805,13 @@ export const KitchenDashboard: React.FC = () => {
                   </div>
 
                   {/* Order Items List */}
-                  <div className="bg-slate-50 rounded-xl p-3.5 flex flex-col gap-2 border border-slate-100">
+                  <div className="bg-surface-container-low rounded-xl p-3.5 flex flex-col gap-2 border border-border-subtle">
                     {order.items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex flex-col pb-1.5 border-b border-slate-200/60 last:border-0 last:pb-0"
+                        className="flex flex-col pb-1.5 border-b border-border-subtle last:border-0 last:pb-0"
                       >
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-900">
+                        <div className="flex items-center justify-between text-xs font-bold text-text-primary">
                           <span>
                             {item.quantity}x {item.name}
                           </span>
@@ -848,7 +848,7 @@ export const KitchenDashboard: React.FC = () => {
                         <>
                           <button
                             onClick={() => updateOrderStatus(order.id, "Rejected")}
-                            className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-600 text-xs font-bold transition-all"
+                            className="px-3 py-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-bold transition-all"
                           >
                             Reject
                           </button>
@@ -864,7 +864,7 @@ export const KitchenDashboard: React.FC = () => {
                       {order.status === "Accepted" && (
                         <button
                           onClick={() => updateOrderStatus(order.id, "Preparing")}
-                          className="px-4 py-1.5 rounded-xl bg-orange-600 text-white text-xs font-bold shadow-sm hover:bg-orange-700 transition-all flex items-center gap-1"
+                          className="px-4 py-1.5 rounded-xl bg-primary text-white text-xs font-bold shadow-sm hover:bg-primary-hover transition-all flex items-center gap-1"
                         >
                           <span className="material-symbols-outlined text-[16px]">
                             skillet
@@ -891,7 +891,7 @@ export const KitchenDashboard: React.FC = () => {
                             setIsScannerModalOpen(true);
                             performVerification(order.tokenNumber);
                           }}
-                          className="px-4 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-bold shadow-sm hover:bg-slate-800 transition-all flex items-center gap-1"
+                          className="px-4 py-1.5 rounded-xl bg-inverse-surface text-white text-xs font-bold shadow-sm hover:bg-white/10 transition-all flex items-center gap-1"
                         >
                           <span className="material-symbols-outlined text-[16px]">
                             task_alt
@@ -909,30 +909,30 @@ export const KitchenDashboard: React.FC = () => {
 
         {/* Right Column: Quick Food Item Sold Out Controls */}
         <div className="flex flex-col gap-4">
-          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col gap-3">
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-border-subtle flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-900">
+              <h2 className="text-base font-bold text-text-primary">
                 Menu Item Availability
               </h2>
-              <span className="text-xs text-slate-500 font-medium">
+              <span className="text-xs text-text-muted font-medium">
                 Live Toggle
               </span>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-text-muted">
               Kitchen staff can instantly toggle items as Sold Out when stock runs out.
             </p>
 
-            <div className="divide-y divide-slate-100 mt-1">
+            <div className="divide-y divide-border-subtle mt-1">
               {menu.map((item) => (
                 <div
                   key={item.id}
                   className="py-3 flex items-center justify-between gap-2"
                 >
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-slate-900 truncate">
+                    <span className="text-xs font-bold text-text-primary truncate">
                       {item.name}
                     </span>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-text-muted/70">
                       Stock: {item.availableQuantity} Left
                     </span>
                   </div>
@@ -942,7 +942,7 @@ export const KitchenDashboard: React.FC = () => {
                     className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
                       item.status === "Available"
                         ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-                        : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                        : "bg-status-limited-bg text-status-limited-text hover:bg-amber-100"
                     }`}
                   >
                     {item.status === "Available" ? "Available" : "Sold Out"}

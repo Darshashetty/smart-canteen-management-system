@@ -934,7 +934,7 @@ let memoryMenuItems = [
     available_quantity: 24,
     preparation_time: 7,
     status: MENU_ITEM_STATUS.AVAILABLE,
-    image: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Bread_Pakora_%28Stuffed_with_Mashed-Spicy-Potatoes%29.JPG',
+    image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Bread_Pakora_%28Stuffed_with_Mashed-Spicy_Potatoes%29.JPG/960px-Bread_Pakora_%28Stuffed_with_Mashed-Spicy_Potatoes%29.JPG',
     total_orders_count: 46
   },
   {

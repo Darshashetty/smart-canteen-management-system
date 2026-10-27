@@ -19,16 +19,11 @@ import {
   menuAPI,
   orderAPI,
   queueAPI,
-  collectionAPI,
-  analyticsAPI,
-  aiAPI,
-  adminAPI,
   setToken,
   getToken,
   mapBackendMenuItem,
   mapBackendOrder,
   mapBackendSlot,
-  BackendMenuItem,
   LoginResponse,
 } from "../lib/api";
 
@@ -40,14 +35,6 @@ export interface UserAccount {
   smartCardBalance?: number;
   studentId?: string;
 }
-
-// Role-to-backend-role mapping (frontend uses 'kitchen', backend uses 'staff')
-const roleToBackendRole: Record<UserRole, string> = {
-  customer: "customer",
-  kitchen: "staff",
-  manager: "manager",
-  admin: "admin",
-};
 
 const backendRoleToFrontendRole = (r: string): UserRole => {
   if (r === "staff") return "kitchen";
@@ -403,7 +390,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [slots, setSlots] = useState<PickupSlot[]>([]);
   const [selectedSlotId, setSelectedSlotId] = useState<string>("");
   const [orders, setOrders] = useState<Order[]>([]);
-  const [aiInsights, setAiInsights] = useState<AIInsight[]>(FALLBACK_AI_INSIGHTS);
+  const [aiInsights] = useState<AIInsight[]>(FALLBACK_AI_INSIGHTS);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const [preferences, setPreferences] = useState<CustomerPreferences>({
@@ -728,6 +715,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders([]);
     setToastMessage("Logged out of Smart Canteen session");
     setTimeout(() => setToastMessage(null), 4000);
+    if (typeof window !== "undefined") {
+      window.location.replace("/");
+    }
   }, []);
 
   // ─── Menu CRUD (connected to backend) ─────────────────

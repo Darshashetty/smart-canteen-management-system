@@ -84,7 +84,7 @@ const REQUESTED_MENU_ADDITIONS = [
   ['ITEM-3024', 'Veg Spring Roll', 'Snacks', 140, 24, 7, 'Crisp rolls filled with seasoned vegetables.', 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=85'],
   ['ITEM-3025', 'Cheese Sandwich', 'Snacks', 120, 24, 6, 'Grilled bread with melted cheese and herbs.', 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?auto=format&fit=crop&w=800&q=85'],
   ['ITEM-3026', 'Masala Fries', 'Snacks', 100, 28, 5, 'Crisp fries tossed in tangy Indian masala.', 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=800&q=85'],
-  ['ITEM-3027', 'Bread Pakora', 'Snacks', 80, 24, 7, 'Golden battered bread fritters with green chutney.', 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Bread_Pakora_%28Stuffed_with_Mashed-Spicy-Potatoes%29.JPG'],
+  ['ITEM-3027', 'Bread Pakora', 'Snacks', 80, 24, 7, 'Golden battered bread fritters with green chutney.', 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b0/Bread_Pakora_%28Stuffed_with_Mashed-Spicy_Potatoes%29.JPG/960px-Bread_Pakora_%28Stuffed_with_Mashed-Spicy_Potatoes%29.JPG'],
   ['ITEM-3028', 'Aloo Chaat', 'Snacks', 100, 22, 6, 'Crisp potato bites with chutneys, yogurt, and spices.', 'https://upload.wikimedia.org/wikipedia/commons/e/ea/Aloo_Chaat.jpg']
 ].map(([item_id, item_name, category, price, available_quantity, preparation_time, description, image]) => ({
   item_id,

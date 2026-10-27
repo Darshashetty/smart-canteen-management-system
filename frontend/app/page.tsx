@@ -87,7 +87,7 @@ const roles = [
     iconColor: "text-status-limited-solid",
     checkColor: "text-status-available-solid",
     btnClass:
-      "bg-status-limited-solid text-on-primary hover:bg-primary-container",
+      "bg-primary text-on-primary hover:bg-primary-hover",
   },
   {
     icon: "skillet",
@@ -123,7 +123,7 @@ const roles = [
     iconColor: "text-on-surface",
     checkColor: "text-text-primary",
     btnClass:
-      "bg-surface-container-low text-text-primary hover:bg-surface-container",
+      "bg-primary-container text-on-primary-container border border-primary-fixed-dim hover:bg-primary-fixed",
   },
 ];
 
@@ -184,7 +184,7 @@ export default function LandingPage() {
 
   if (isAuthenticated && role === "customer") {
     return (
-      <div className="min-h-screen bg-[#f8f9ff] flex flex-col font-sans">
+      <div className="min-h-screen bg-surface-alt flex flex-col font-sans">
         <Header />
         <main className="flex-1 pt-16 md:pt-20">
           <CustomerHome />
@@ -200,17 +200,17 @@ export default function LandingPage() {
         <div className="h-16 sm:h-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-4">
             <Link href="/" className="flex items-center gap-2">
-              <span className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-orange-600 text-white">
+              <span className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-primary text-white">
                 <span className="material-symbols-outlined text-[20px] sm:text-[24px]">restaurant</span>
               </span>
-              <span className="font-[Plus_Jakarta_Sans] text-lg sm:text-xl font-bold tracking-tight text-on-surface">
+              <span className="font-headline text-lg sm:text-xl font-bold tracking-tight text-on-surface">
                 Smart Canteen
               </span>
             </Link>
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-status-available-bg text-status-available-text border border-status-available-solid/20">
               <span className="w-2 h-2 rounded-full bg-status-available-solid animate-pulse" />
               <span className="text-[12px] font-bold tracking-wider">
-                Cafeteria Live: Open
+                Open Now
               </span>
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function LandingPage() {
               How It Works
             </a>
             <Link href="/menu" className="text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors">
-              Live Menu
+              Menu
             </Link>
             <a href="#features" className="text-sm font-semibold text-on-surface-variant hover:text-on-surface transition-colors">
               Features
@@ -233,21 +233,16 @@ export default function LandingPage() {
           <div className="flex items-center gap-1.5 sm:gap-2">
             <Link
               href="/login"
-              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-border-strong bg-surface text-on-surface text-xs sm:text-sm font-semibold hover:bg-surface-container-low transition-colors min-h-[38px] sm:min-h-[44px]"
+              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-primary-fixed-dim bg-primary-container text-on-primary-container text-xs sm:text-sm font-semibold hover:bg-primary-fixed transition-colors min-h-[38px] sm:min-h-[44px]"
             >
               Log In
             </Link>
             <LoginPromptButton
-              className="inline-flex items-center justify-center px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-primary text-on-primary text-xs sm:text-sm font-semibold shadow-sm hover:bg-primary-fixed-dim transition-colors min-h-[38px] sm:min-h-[44px]"
+              className="inline-flex items-center justify-center px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-primary text-on-primary text-xs sm:text-sm font-semibold shadow-sm hover:bg-primary-hover transition-colors min-h-[38px] sm:min-h-[44px]"
             >
               Order Now
-            </LoginPromptButton>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary flex items-center justify-center ml-0.5">
-              <span className="material-symbols-outlined text-on-primary text-[16px] sm:text-[18px]">
-                person
-              </span>
-            </div>
-          </div>
+        </LoginPromptButton>
+      </div>
         </div>
       </header>
 
@@ -269,14 +264,14 @@ export default function LandingPage() {
                       bolt
                     </span>
                     <span className="text-[11px] sm:text-[12px] font-bold uppercase tracking-wider">
-                      Noon Lunch Rush Protocol Active
+                      Lunch Rush Is On
                     </span>
                   </div>
 
-                  <h1 className="font-[Plus_Jakarta_Sans] text-3xl sm:text-5xl lg:text-[48px] lg:leading-[56px] font-bold tracking-tight text-text-primary">
+                  <h1 className="font-headline text-3xl sm:text-5xl lg:text-[48px] lg:leading-[56px] font-bold tracking-tight text-text-primary">
                     Skip the Lunch Rush,{" "}
                     <br className="hidden sm:inline" />
-                    <span className="text-status-limited-solid">Not Your Meal.</span>
+                    <span className="text-primary">Not Your Meal.</span>
                   </h1>
 
                   <p className="text-base sm:text-lg leading-6 sm:leading-7 text-text-muted max-w-xl">
@@ -288,7 +283,7 @@ export default function LandingPage() {
                   {/* CTAs */}
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-2">
             <LoginPromptButton
-              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl bg-primary text-on-primary text-sm sm:text-base font-semibold shadow-md hover:bg-primary-fixed-dim transition-all active:scale-[0.98] min-h-[48px] sm:min-h-[52px]"
+              className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl bg-primary text-on-primary text-sm sm:text-base font-semibold shadow-md hover:bg-primary-hover transition-all active:scale-[0.98] min-h-[48px] sm:min-h-[52px]"
             >
               <span className="material-symbols-outlined text-[20px]">
                 restaurant
@@ -300,13 +295,13 @@ export default function LandingPage() {
             </LoginPromptButton>
                     <a
                       href="#pulse-widget"
-                      className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl bg-surface text-text-primary text-sm sm:text-base font-semibold shadow-sm hover:bg-surface-container transition-all min-h-[48px] sm:min-h-[52px]"
+                      className="inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl border border-primary-fixed-dim bg-primary-container text-on-primary-container text-sm sm:text-base font-semibold shadow-sm hover:bg-primary-fixed transition-all min-h-[48px] sm:min-h-[52px]"
                     >
                       <span className="relative flex h-2.5 w-2.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-available-solid opacity-75" />
                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-status-available-solid" />
                       </span>
-                      <span>View Live Queue Status</span>
+                      <span>Check Pickup Times</span>
                     </a>
                   </div>
 
@@ -322,7 +317,7 @@ export default function LandingPage() {
                     </div>
                     <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface shadow-sm text-text-primary text-[12px] font-bold">
                       <span className="text-tertiary font-bold">📱</span>
-                      <span>Digital QR tokens</span>
+                      <span>Digital meal pass</span>
                     </div>
                   </div>
                 </div>
@@ -334,11 +329,11 @@ export default function LandingPage() {
                     {/* Order Header */}
                     <div className="flex items-center justify-between pb-5">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-primary-fixed flex items-center justify-center text-status-limited-solid font-bold font-[Plus_Jakarta_Sans] text-lg">
+                        <div className="h-10 w-10 rounded-xl bg-primary-fixed flex items-center justify-center text-status-limited-solid font-bold font-headline text-lg">
                           #C
                         </div>
                         <div>
-                          <div className="font-[Plus_Jakarta_Sans] text-lg font-bold text-text-primary">
+                          <div className="font-headline text-lg font-bold text-text-primary">
                             Order #C-023
                           </div>
                           <div className="text-sm text-text-muted">
@@ -357,7 +352,7 @@ export default function LandingPage() {
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         className="w-16 h-16 rounded-lg object-cover shadow-sm shrink-0"
-                        src="/menu-fallback.svg"
+                        src="https://images.unsplash.com/photo-1606755962773-d324e0a13086?auto=format&fit=crop&w=200&q=80"
                         alt="Deluxe Chicken Burger Combo"
                       />
                       <div className="min-w-0 flex-1">
@@ -468,7 +463,7 @@ export default function LandingPage() {
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-error animate-ping" />
                   <div>
-                    <h2 className="font-[Plus_Jakarta_Sans] text-lg sm:text-xl font-bold tracking-tight text-text-primary">
+                    <h2 className="font-headline text-lg sm:text-xl font-bold tracking-tight text-text-primary">
                       Live Cafeteria Pulse • Central Dining Hall
                     </h2>
                     <p className="text-xs sm:text-sm text-text-muted">
@@ -495,7 +490,7 @@ export default function LandingPage() {
                       </span>
                     </div>
                     <div
-                      className={`font-[Plus_Jakarta_Sans] font-bold text-text-primary ${
+                      className={`font-headline font-bold text-text-primary ${
                         m.label === "Popular Right Now"
                           ? "text-base sm:text-lg"
                           : "text-xl sm:text-2xl"
@@ -539,7 +534,7 @@ export default function LandingPage() {
                 </div>
                 <Link
                   href="/menu"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-status-limited-solid text-on-primary text-xs sm:text-sm font-semibold shadow-sm hover:bg-primary-container shrink-0 min-h-[42px] sm:min-h-[44px]"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-on-primary text-xs sm:text-sm font-semibold shadow-sm hover:bg-primary-hover shrink-0 min-h-[42px] sm:min-h-[44px]"
                 >
                   <span>Reserve Next Slot</span>
                   <span className="material-symbols-outlined text-[18px]">
@@ -557,7 +552,7 @@ export default function LandingPage() {
                 <span className="text-[11px] sm:text-[12px] font-bold uppercase tracking-widest text-status-limited-solid">
                   Effortless Campus Dining in 4 Simple Steps
                 </span>
-                <h2 className="font-[Plus_Jakarta_Sans] text-2xl sm:text-3xl md:text-4xl font-bold text-text-primary mt-2 tracking-tight">
+                <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl font-bold text-text-primary mt-2 tracking-tight">
                   How Smart Canteen Works
                 </h2>
                 <p className="text-sm sm:text-base text-text-muted mt-2 sm:mt-3">
@@ -574,11 +569,11 @@ export default function LandingPage() {
                   >
                     <div>
                       <div
-                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${s.bgClass} flex items-center justify-center ${s.textClass} mb-3 sm:mb-4 font-bold font-[Plus_Jakarta_Sans] text-lg sm:text-xl`}
+                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${s.bgClass} flex items-center justify-center ${s.textClass} mb-3 sm:mb-4 font-bold font-headline text-lg sm:text-xl`}
                       >
                         {s.number}
                       </div>
-                      <h3 className="font-[Plus_Jakarta_Sans] text-base sm:text-lg font-bold text-text-primary mb-1.5 sm:mb-2">
+                      <h3 className="font-headline text-base sm:text-lg font-bold text-text-primary mb-1.5 sm:mb-2">
                         {s.title}
                       </h3>
                       <p className="text-xs sm:text-sm leading-relaxed text-text-muted">
@@ -586,7 +581,7 @@ export default function LandingPage() {
                       </p>
                     </div>
                     <div
-                      className={`mt-4 sm:mt-6 pt-3 sm:pt-4 flex items-center gap-2 ${s.textClass} text-[11px] sm:text-[12px] font-semibold border-t border-slate-100 sm:border-0`}
+                      className={`mt-4 sm:mt-6 pt-3 sm:pt-4 flex items-center gap-2 ${s.textClass} text-[11px] sm:text-[12px] font-semibold border-t border-border-subtle sm:border-0`}
                     >
                       <span className="material-symbols-outlined text-[16px] sm:text-[18px]">
                         {s.icon}
@@ -605,7 +600,7 @@ export default function LandingPage() {
               <span className="text-[11px] sm:text-[12px] font-bold uppercase tracking-widest text-status-limited-solid">
                 Bespoke Views
               </span>
-              <h2 className="font-[Plus_Jakarta_Sans] text-2xl sm:text-3xl md:text-4xl font-bold text-text-primary mt-2 tracking-tight">
+              <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl font-bold text-text-primary mt-2 tracking-tight">
                 Designed for Everyone in the Dining Ecosystem
               </h2>
               <p className="text-sm sm:text-base text-text-muted mt-2 sm:mt-3">
@@ -628,7 +623,7 @@ export default function LandingPage() {
                         {r.icon}
                       </span>
                     </div>
-                    <h3 className="font-[Plus_Jakarta_Sans] text-xl sm:text-2xl font-bold text-text-primary mb-2">
+                    <h3 className="font-headline text-xl sm:text-2xl font-bold text-text-primary mb-2">
                       {r.title}
                     </h3>
                     <p className="text-sm sm:text-base text-text-muted mb-4 sm:mb-6">{r.text}</p>
@@ -683,7 +678,7 @@ export default function LandingPage() {
                   <span className="material-symbols-outlined text-[32px] sm:text-[40px] text-status-limited-solid opacity-60">
                     format_quote
                   </span>
-                  <p className="font-[Plus_Jakarta_Sans] text-base sm:text-xl text-text-primary font-semibold leading-relaxed">
+                  <p className="font-headline text-base sm:text-xl text-text-primary font-semibold leading-relaxed">
                     &ldquo;Reduced our peak noon rush wait from 25 minutes down
                     to an 8-minute grab-and-go experience across 4,000 daily
                     campus meals.&rdquo;
@@ -722,48 +717,42 @@ export default function LandingPage() {
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:py-1.5 rounded-full bg-surface border border-border-subtle text-status-available-text self-start sm:self-auto">
                 <span className="w-2 h-2 rounded-full bg-status-available-solid shadow-[0_0_8px_rgba(22,163,74,0.6)]" />
                 <span className="text-[11px] sm:text-[12px] font-semibold">
-                  All Systems Operational
+                  Open Today · 8 AM – Midnight
                 </span>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-4 sm:gap-6">
               <Link href="/menu" className="text-xs sm:text-sm text-on-surface-variant hover:text-on-surface transition-colors">
-                Live Queue Status
+                View Menu
               </Link>
               <a href="#how-it-works" className="text-xs sm:text-sm text-on-surface-variant hover:text-on-surface transition-colors">
-                Kiosk Locations
+                Find Us
               </a>
-              <Link href="/login" className="text-xs sm:text-sm text-on-surface-variant hover:text-on-surface transition-colors">
-                Kitchen Display API
-              </Link>
               <a href="#" className="text-xs sm:text-sm text-on-surface-variant hover:text-on-surface transition-colors">
-                Nutritional Standards
+                Allergen Guide
+              </a>
+              <a href="#" className="text-xs sm:text-sm text-on-surface-variant hover:text-on-surface transition-colors">
+                Contact Us
               </a>
             </div>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-on-surface-variant">
             <p className="text-xs sm:text-sm text-center sm:text-left">
-              © 2025 Smart Canteen Operations. Crafted for rapid lunchtime throughput.
+              © 2026 Smart Canteen. Fresh meals, ready when you are.
             </p>
-            <div className="flex items-center gap-3 sm:gap-4">
-              <span className="text-[11px] sm:text-[12px] font-bold text-text-muted">
-                Latency: 28ms
-              </span>
-              <span className="text-border-strong">•</span>
-              <span className="text-[11px] sm:text-[12px] font-bold text-text-muted">
-                Peak Hour Sync Active
-              </span>
-            </div>
+            <span className="text-[11px] sm:text-[12px] font-bold text-text-muted">
+              Dine-in · Takeaway · Pre-order
+            </span>
           </div>
         </div>
       </footer>
 
       {/* Global Floating Toast Alert (guest view) */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-4 left-4 sm:left-auto z-[60] bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 max-w-md sm:ml-auto anim-fade-in-up">
-          <span className="material-symbols-outlined text-orange-400 text-[20px] shrink-0">
+        <div className="fixed bottom-6 right-4 left-4 sm:left-auto z-[60] bg-inverse-surface text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-white/15 max-w-md sm:ml-auto anim-fade-in-up">
+          <span className="material-symbols-outlined text-primary-fixed-dim text-[20px] shrink-0">
             info
           </span>
           <span className="text-xs font-medium">{toastMessage}</span>
