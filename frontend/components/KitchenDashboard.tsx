@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import jsQR from "jsqr";
 import { useApp } from "../app/context/AppContext";
 import { collectionAPI, orderAPI, type BackendOrder } from "../app/lib/api";
 
@@ -58,7 +59,9 @@ export const KitchenDashboard: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const detectorRef = useRef<BarcodeDetectorLike | null>(null);
+  const decodeCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const scanRafRef = useRef<number | null>(null);
+  const lastJsQrScanRef = useRef<number>(0);
   const lastDecodedRef = useRef<string>("");
   const lastDecodedAtRef = useRef<number>(0);
   const performVerificationRef = useRef<(value: string) => Promise<void>>(
@@ -240,38 +243,88 @@ export const KitchenDashboard: React.FC = () => {
   };
 
   const scanLoop = useCallback(() => {
+    const scheduleNext = () => {
+      if (streamRef.current) scanRafRef.current = requestAnimationFrame(step);
+    };
+
+    const submitDecoded = (rawValue: string) => {
+      const value = String(rawValue || "").trim();
+      if (!value) return;
+
+      const now = Date.now();
+      // Debounce: ignore identical reads within 3s to avoid duplicate submits
+      // while the QR stays in frame during verification.
+      if (
+        value === lastDecodedRef.current &&
+        now - lastDecodedAtRef.current < 3000
+      ) {
+        return;
+      }
+      lastDecodedRef.current = value;
+      lastDecodedAtRef.current = now;
+
+      performVerificationRef.current(value);
+    };
+
     const step = () => {
       const video = videoRef.current;
-      const detector = detectorRef.current;
-      if (!video || !detector || video.readyState < 2) {
-        scanRafRef.current = requestAnimationFrame(step);
+      if (!video || video.readyState < 2) {
+        scheduleNext();
         return;
       }
 
-      detector
-        .detect(video)
-        .then((codes: DetectedBarcode[]) => {
-          if (!codes || codes.length === 0) return;
-          const rawValue = String(codes[0]?.rawValue || "").trim();
-          if (!rawValue) return;
+      const detector = detectorRef.current;
+      if (detector) {
+        detector
+          .detect(video)
+          .then((codes: DetectedBarcode[]) => {
+            if (!codes || codes.length === 0) return;
+            submitDecoded(codes[0]?.rawValue || "");
+          })
+          .catch(() => {
+            // Transient decode failures are expected between frames; keep scanning.
+          })
+          .finally(scheduleNext);
+        return;
+      }
 
-          const now = Date.now();
-          // Debounce: ignore identical reads within 3s to avoid duplicate submits
-          // while the QR stays in frame during verification.
-          if (rawValue === lastDecodedRef.current && now - lastDecodedAtRef.current < 3000) {
-            return;
-          }
-          lastDecodedRef.current = rawValue;
-          lastDecodedAtRef.current = now;
+      // Universal fallback for browsers without BarcodeDetector (Safari/iOS,
+      // Firefox, older Android WebViews). jsQR runs entirely in JS on a canvas.
+      const now = Date.now();
+      if (now - lastJsQrScanRef.current < 180) {
+        scheduleNext();
+        return;
+      }
+      lastJsQrScanRef.current = now;
 
-          performVerificationRef.current(rawValue);
-        })
-        .catch(() => {
-          // Transient decode failures are expected between frames; keep scanning.
-        })
-        .finally(() => {
-          scanRafRef.current = requestAnimationFrame(step);
-        });
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      if (!width || !height) {
+        scheduleNext();
+        return;
+      }
+
+      let canvas = decodeCanvasRef.current;
+      if (!canvas) {
+        canvas = document.createElement("canvas");
+        decodeCanvasRef.current = canvas;
+      }
+      if (canvas.width !== width) canvas.width = width;
+      if (canvas.height !== height) canvas.height = height;
+
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) {
+        scheduleNext();
+        return;
+      }
+      ctx.drawImage(video, 0, 0, width, height);
+      const frame = ctx.getImageData(0, 0, width, height);
+      const decoded = jsQR(frame.data, frame.width, frame.height, {
+        inversionAttempts: "dontInvert",
+      });
+      if (decoded?.data) submitDecoded(decoded.data);
+
+      scheduleNext();
     };
 
     step();
@@ -280,13 +333,6 @@ export const KitchenDashboard: React.FC = () => {
   const startCamera = useCallback(
     async (deviceId?: string) => {
       const Detector = getBarcodeDetector();
-      if (!Detector) {
-        setScannerStatus("error");
-        setScannerError(
-          "This browser has no built-in QR decoder. Use Chrome/Edge on Android or desktop, or type the token below."
-        );
-        return;
-      }
       if (
         typeof navigator === "undefined" ||
         !navigator.mediaDevices?.getUserMedia
@@ -316,10 +362,18 @@ export const KitchenDashboard: React.FC = () => {
           await videoRef.current.play().catch(() => {});
         }
 
-        detectorRef.current = new Detector({ formats: ["qr_code"] });
+        detectorRef.current = null;
+        if (Detector) {
+          try {
+            detectorRef.current = new Detector({ formats: ["qr_code"] });
+          } catch {
+            // Fall through to the jsQR decoder below.
+          }
+        }
         setScannerStatus("scanning");
         lastDecodedRef.current = "";
         lastDecodedAtRef.current = 0;
+        lastJsQrScanRef.current = 0;
 
         const devices = await navigator.mediaDevices.enumerateDevices();
         setCameraDevices(devices.filter((d) => d.kind === "videoinput"));
@@ -833,15 +887,17 @@ export const KitchenDashboard: React.FC = () => {
 
                   {/* Kitchen Action Buttons */}
                   <div className="flex flex-wrap items-center justify-between pt-1 gap-2">
-                    <button
-                      onClick={() => updateOrderStatus(order.id, "Delayed")}
-                      className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1"
-                    >
-                      <span className="material-symbols-outlined text-[15px]">
-                        report_problem
-                      </span>
-                      <span>Report Issue / Delay</span>
-                    </button>
+                    {["Accepted", "Preparing"].includes(order.status) && (
+                      <button
+                        onClick={() => updateOrderStatus(order.id, "Delayed")}
+                        className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">
+                          report_problem
+                        </span>
+                        <span>Report Issue / Delay</span>
+                      </button>
+                    )}
 
                     <div className="flex flex-wrap items-center gap-2">
                       {order.status === "Placed" && (

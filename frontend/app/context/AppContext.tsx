@@ -49,6 +49,8 @@ const DEFAULT_CREDENTIALS: Record<UserRole, { email: string; password: string; n
   admin: { email: "admin@canteen.com", password: "password123", name: "System Administrator" },
 };
 
+const CART_STORAGE_KEY = "canteen_cart";
+
 // Default rich menu items with high-res photos as default fallback
 const INITIAL_RICH_MENU: MenuItem[] = [
   {
@@ -404,6 +406,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     notifyOnDelay: true,
   });
 
+  // Restore the basket after a page refresh/navigation, then keep it in sync.
+  // A state flag (not a ref) prevents the empty first paint from overwriting
+  // the saved basket, including during React StrictMode's double effect run.
+  const [isCartHydrated, setIsCartHydrated] = useState(false);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(CART_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setCart(
+            parsed.filter(
+              (ci) =>
+                ci &&
+                ci.menuItem &&
+                typeof ci.menuItem.id === "string" &&
+                ci.menuItem.id.length > 0 &&
+                typeof ci.quantity === "number" &&
+                ci.quantity > 0
+            )
+          );
+        }
+      }
+    } catch {
+      /* ignore malformed persisted carts */
+    }
+    setIsCartHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isCartHydrated) return;
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    } catch {
+      /* storage may be unavailable (private mode / quota) */
+    }
+  }, [cart, isCartHydrated]);
+
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 4000);
@@ -427,7 +467,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const res = await menuAPI.getAll();
       if (res.data && res.data.length > 0) {
-        setMenu(res.data.map(mapBackendMenuItem));
+        const freshMenu = res.data.map(mapBackendMenuItem);
+        setMenu(freshMenu);
+        // Keep a restored/persisted basket in sync with live price + stock.
+        setCart((prev) =>
+          prev.map((ci) => {
+            const fresh = freshMenu.find(
+              (m) => m.id === ci.menuItem.id || m.name === ci.menuItem.name
+            );
+            return fresh ? { ...ci, menuItem: fresh } : ci;
+          })
+        );
       }
     } catch (err) {
       console.warn("[API] Failed to fetch menu, using cached data:", err);
@@ -582,9 +632,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (!isAuthenticated || !currentUser.id) return;
 
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000", {
-      transports: ["websocket"],
-    });
+    const socketUrl = (process.env.NEXT_PUBLIC_SOCKET_URL || "").replace(/\/+$/, "");
+    // Same-origin sockets go through the Next.js proxy. HTTP long-polling is
+    // the most reliable transport there, especially behind LAN IPs/tunnels.
+    const socket = socketUrl
+      ? io(socketUrl)
+      : io(undefined, { transports: ["polling"] });
     socket.emit("join_user_room", currentUser.id);
     if (role === "kitchen" || role === "manager" || role === "admin") {
       socket.emit("join_kitchen_room");
@@ -720,6 +773,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     setRoleState("customer");
     setCart([]);
+    try {
+      localStorage.removeItem(CART_STORAGE_KEY);
+    } catch {
+      /* ignore storage errors during logout */
+    }
     setOrders([]);
     setToastMessage("Logged out of Smart Canteen session");
     setTimeout(() => setToastMessage(null), 4000);
@@ -955,7 +1013,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return newOrder;
     },
-    [cart, menu, slots, orders.length, currentUser, cartTotal, showToast, clearCart, fetchMenu, fetchSlots, refreshProfile]
+    [cart, menu, slots, orders.length, currentUser, isAuthenticated, cartTotal, showToast, clearCart, fetchMenu, fetchSlots, refreshProfile]
   );
 
   // ─── Update Order Status (connected to backend) ───────
@@ -993,6 +1051,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fetchOrders();
       } catch (err) {
         console.warn("[API] Status update failed on backend:", err);
+        // Revert the optimistic change so the UI never shows a status the
+        // server rejected (e.g. an invalid transition).
+        fetchOrders();
       }
     },
     [showToast, fetchOrders]

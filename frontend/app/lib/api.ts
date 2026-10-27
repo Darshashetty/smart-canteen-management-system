@@ -3,7 +3,8 @@
  * Connects Next.js frontend to Express backend at localhost:5000
  */
 
-const API_BASE = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api`;
+const configuredApiUrl = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
+const API_BASE = configuredApiUrl ? `${configuredApiUrl}/api` : "/api";
 
 // ─── Token Management ─────────────────────────────────
 let authToken: string | null = null;

@@ -8,13 +8,21 @@ export const LiveOrderTracker: React.FC = () => {
   const router = useRouter();
   const { activeOrder: contextOrder, updateOrderStatus } = useApp();
   const [qrFallback, setQrFallback] = useState<{ id?: string; qr?: string }>({});
+  const [localQr, setLocalQr] = useState<{ id?: string; qr?: string }>({});
   const [scannedOrder, setScannedOrder] = useState<Order | null>(null);
   const [scanNotice, setScanNotice] = useState("");
   // Phone cameras open the QR link with ?order=ORD-...&token=C-023 — show
   // exactly that order (owned by this account), not just the active one.
   const activeOrder = scannedOrder ?? contextOrder;
   const orderId = activeOrder?.id;
+  const orderTokenNumber = activeOrder?.tokenNumber;
   const hasQr = Boolean(activeOrder?.qrCode);
+  // While an order is being confirmed by the server it temporarily carries an
+  // optimistic local id ("ord-...") that the API cannot resolve. Only ask the
+  // backend for a QR once the real ObjectId / ORD- id is available.
+  const isBackendOrderId = Boolean(
+    orderId && (/^[a-f0-9]{24}$/i.test(orderId) || orderId.startsWith("ORD-"))
+  );
 
   useEffect(() => {
     const scannedId = new URLSearchParams(window.location.search).get("order");
@@ -36,10 +44,40 @@ export const LiveOrderTracker: React.FC = () => {
     };
   }, [contextOrder?.id, scannedOrder?.id]);
 
+  // Generate the QR against the origin the customer is actually using. The
+  // backend's stored QR may contain an old localhost/tunnel URL that a phone
+  // cannot reach, while this one works over the same LAN/tunnel as the app.
+  useEffect(() => {
+    if (!orderId || !orderTokenNumber || !isBackendOrderId) return;
+    let cancelled = false;
+    const payload = `${window.location.origin}/live-order?order=${encodeURIComponent(
+      orderId
+    )}&token=${encodeURIComponent(orderTokenNumber)}`;
+    import("qrcode")
+      .then((mod) => {
+        const QRCode = mod.default ?? mod;
+        return QRCode.toDataURL(payload, {
+          errorCorrectionLevel: "M",
+          margin: 2,
+          width: 250,
+          color: { dark: "#000000", light: "#ffffff" },
+        });
+      })
+      .then((url) => {
+        if (!cancelled && url) setLocalQr({ id: orderId, qr: url });
+      })
+      .catch(() => {
+        /* fall back to the server-generated QR below */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId, orderTokenNumber, isBackendOrderId]);
+
   // Lazily fetch/regenerate the QR for legacy orders that were created without
   // one. setState only happens in the async callback, never synchronously.
   useEffect(() => {
-    if (!orderId || hasQr) return;
+    if (!orderId || hasQr || !isBackendOrderId) return;
     let cancelled = false;
     orderAPI
       .getQR(orderId)
@@ -52,7 +90,7 @@ export const LiveOrderTracker: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [orderId, hasQr]);
+  }, [orderId, hasQr, isBackendOrderId]);
 
   if (!activeOrder) {
     return (
@@ -95,7 +133,9 @@ export const LiveOrderTracker: React.FC = () => {
   const canCancel = ["Placed", "Accepted"].includes(activeOrder.status);
 
   const qrCode =
-    activeOrder.qrCode || (qrFallback.id === activeOrder.id ? qrFallback.qr : undefined);
+    (localQr.id === activeOrder.id ? localQr.qr : undefined) ||
+    activeOrder.qrCode ||
+    (qrFallback.id === activeOrder.id ? qrFallback.qr : undefined);
 
   return (
     <div className="max-w-2xl mx-auto w-full px-3 sm:px-4 pt-4 pb-32 flex flex-col gap-5">

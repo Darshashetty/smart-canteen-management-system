@@ -61,7 +61,7 @@ export const Header: React.FC = () => {
                 <span
                   className={`hidden sm:inline text-[10px] font-bold uppercase tracking-wider text-white px-2 py-0.5 rounded-full ${roleLabels[role].bg}`}
                 >
-                  {roleLabels[role].badge}
+                  {isAuthenticated ? roleLabels[role].badge : "Guest"}
                 </span>
               </div>
               <span className="hidden sm:block text-xs text-text-muted truncate">
@@ -195,7 +195,7 @@ export const Header: React.FC = () => {
             )}
 
             {/* Cart Icon Trigger */}
-            {role === "customer" && (
+            {role === "customer" && isAuthenticated && (
               <button
                 onClick={() => setShowTopUp(true)}
                 aria-label="Smart card balance"

@@ -27,6 +27,25 @@ export default function LoginPage() {
       setEmail("");
       setPassword("");
     }
+    const next = params.get("next") || "";
+    const roleForPath: UserRole | null = next.startsWith("/kitchen")
+      ? "kitchen"
+      : next.startsWith("/manager")
+      ? "manager"
+      : next.startsWith("/admin")
+      ? "admin"
+      : null;
+    if (roleForPath) {
+      setSelectedRole(roleForPath);
+      setEmail(
+        roleForPath === "kitchen"
+          ? "staff@canteen.com"
+          : roleForPath === "manager"
+          ? "manager@canteen.com"
+          : "admin@canteen.com"
+      );
+      setPassword("");
+    }
   }, []);
 
   const rolesConfig: {
@@ -86,6 +105,12 @@ export default function LoginPage() {
     }
   };
 
+  const getSafeNextPath = () => {
+    if (typeof window === "undefined") return null;
+    const next = new URLSearchParams(window.location.search).get("next");
+    return next && next.startsWith("/") && !next.startsWith("//") ? next : null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -96,7 +121,7 @@ export default function LoginPage() {
         const res = await authAPI.register(name, email, password, phone);
         setToken(res.token);
         showToast(`Account created for ${res.user.name}.`);
-        window.location.assign("/");
+        window.location.assign(getSafeNextPath() || "/");
         return;
       }
 
@@ -108,7 +133,7 @@ export default function LoginPage() {
         res.user.role === "staff" ? "kitchen" : (res.user.role as UserRole);
 
       const conf = rolesConfig.find((c) => c.role === mappedRole);
-      router.push(conf ? conf.redirectTo : "/");
+      router.push(getSafeNextPath() || (conf ? conf.redirectTo : "/"));
     } catch (err: any) {
       if (isSignup) {
         const message = err?.message || "Could not create your account.";
