@@ -45,8 +45,8 @@ const steps = [
     number: "02",
     icon: "qr_code_2",
     title: "Get Digital Token",
-    text: "Receive encrypted Token #C-023 with barcode & QR code pass synced straight to your Apple Wallet or Campus Card app.",
-    note: "Wallet tap ready",
+    text: "Receive your Token #C-023 with a scannable QR pass right in the app.",
+    note: "QR pass ready",
     bgClass: "bg-surface-container-highest",
     textClass: "text-tertiary",
   },
@@ -54,7 +54,7 @@ const steps = [
     number: "03",
     icon: "notifications_active",
     title: "Track in Real Time",
-    text: "Watch line cooks fire your order, monitor remaining prep countdowns, and get an automated SMS notification 5 minutes before pickup.",
+    text: "Watch your order move through the kitchen, follow the prep countdown, and get an in-app alert 5 minutes before pickup.",
     note: "Push chimes & alerts",
     bgClass: "bg-status-limited-bg",
     textClass: "text-status-limited-solid",
@@ -63,7 +63,7 @@ const steps = [
     number: "04",
     icon: "check_circle",
     title: "Quick Counter Pickup",
-    text: "Bypass cafeteria queues entirely. Flash your screen at dedicated Express Heated Locker pods or Counter B for immediate hot food handover.",
+    text: "Skip the counter queue. Show your QR pass at the pickup window and collect your meal.",
     note: "Scan & walk away",
     bgClass: "bg-status-available-bg",
     textClass: "text-status-available-solid",
@@ -76,7 +76,7 @@ const roles = [
     title: "Students & Staff",
     text: "Browse daily rush menus, pre-order ahead of lectures, tap student card balances, and avoid cafeteria crowding.",
     features: [
-      "Campus card & balance auto-sync",
+      "Campus smart card & balance top-up",
       "Personalized allergen & diet alerts",
       "1-tap instant meal reordering",
     ],
@@ -92,11 +92,11 @@ const roles = [
   {
     icon: "skillet",
     title: "Chefs & Line Staff",
-    text: "Kitchen Display System (KDS) board with live queue priority sorting, ingredient 86 controls, and audio haptic chimes.",
+    text: "Kitchen Display board with live queue priority sorting and one-tap sold-out controls.",
     features: [
       "Glanceable high-contrast KDS board",
       "Automated delayed order rush alerts",
-      "Instant 86 sold-out inventory switch",
+      "One-tap sold-out inventory switch",
     ],
     action: "Kitchen KDS Login",
     actionIcon: "desktop_windows",
@@ -114,7 +114,7 @@ const roles = [
     features: [
       "Peak throughput velocity analytics",
       "Dynamic slot throttling & pacing rules",
-      "Smart locker hardware telemetry",
+      "Live slot capacity & queue controls",
     ],
     action: "Manager Portal",
     actionIcon: "settings",
@@ -171,7 +171,7 @@ const pulseMetrics = [
 ];
 
 const featureChips = [
-  { icon: "lock_clock", label: "Smart Heated Pickup Lockers", color: "text-status-limited-solid" },
+  { icon: "lock_clock", label: "Digital Pickup Pass", color: "text-status-limited-solid" },
   { icon: "contactless", label: "Campus Card NFC & Apple Pay", color: "text-tertiary" },
   { icon: "verified_user", label: "Automated Allergy Guard", color: "text-secondary" },
   { icon: "speed", label: "Zero Queue Congestion", color: "text-status-available-solid" },
@@ -428,10 +428,10 @@ export default function LandingPage() {
                         </div>
                         <div>
                           <div className="text-sm font-bold text-text-primary">
-                            Counter B • Express Locker #14
+                            Counter B • Pickup Window
                           </div>
                           <div className="text-sm text-text-muted">
-                            Scan screen at door sensor to unlock tray
+                            Show this QR pass at the counter to collect your tray
                           </div>
                         </div>
                       </div>

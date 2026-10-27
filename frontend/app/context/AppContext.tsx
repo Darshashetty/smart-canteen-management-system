@@ -309,7 +309,7 @@ const FALLBACK_AI_INSIGHTS: AIInsight[] = [
     title: "Kitchen Delay Prevention Alert",
     type: "delay",
     description: "Counter Station B has 8 active hot orders queued simultaneously.",
-    actionableTip: "Re-route simple cold beverage orders (e.g. Matcha Latte) to Express Station Locker A.",
+    actionableTip: "Re-route simple cold beverage orders (e.g. Matcha Latte) to Express Pickup Counter.",
     confidence: 88,
     timestamp: "5 mins ago",
   },

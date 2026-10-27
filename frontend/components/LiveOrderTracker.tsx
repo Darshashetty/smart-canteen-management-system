@@ -283,7 +283,7 @@ export const LiveOrderTracker: React.FC = () => {
           <span className="material-symbols-outlined text-[16px] text-primary">
             qr_code_scanner
           </span>
-          Hold phone under counter scanner or locker bay optical sensor
+          Show this QR pass at the pickup counter
         </p>
 
         {/* Prep Countdown & Progress Bar */}
