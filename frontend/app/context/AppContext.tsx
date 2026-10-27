@@ -678,11 +678,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       newRole: UserRole,
       credentials?: { email: string; password: string }
     ): Promise<LoginResponse> => {
-      const creds = credentials ?? DEFAULT_CREDENTIALS[newRole];
-      const res = await authAPI.login(creds.email, creds.password);
-      setToken(res.token);
-      const fRole = backendRoleToFrontendRole(res.user.role);
-      setCurrentUser({
+    const creds = credentials ?? DEFAULT_CREDENTIALS[newRole];
+    const res = await authAPI.login(creds.email, creds.password);
+    const fRole = backendRoleToFrontendRole(res.user.role);
+
+    if (fRole !== newRole) {
+      setToken(null);
+      throw new Error(
+        `This account is registered as ${fRole.toUpperCase()}. Please select the ${fRole} role to continue.`
+      );
+    }
+
+    setToken(res.token);
+    setCurrentUser({
         id: res.user.id,
         name: res.user.name,
         email: res.user.email,

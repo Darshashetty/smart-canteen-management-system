@@ -80,6 +80,10 @@ export default function LoginPage() {
     setSelectedRole(r);
     const conf = rolesConfig.find((c) => c.role === r);
     if (conf) setEmail(conf.defaultEmail);
+    if (r !== selectedRole) {
+      setPassword("");
+      setFormError("");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -193,6 +197,9 @@ export default function LoginPage() {
               </div>
             ))}
           </div>
+          <p className="text-[10px] font-semibold text-text-muted">
+            Your account role must match the selected portal.
+          </p>
         </div>}
 
         {/* Login Form */}
