@@ -116,7 +116,6 @@ export default function LoginPage() {
         setFormError(message);
         return;
       }
-      console.error("[Login] Backend auth failed:", err);
       const message =
         err instanceof TypeError
           ? "Cannot reach the canteen right now. Please try again in a moment."
