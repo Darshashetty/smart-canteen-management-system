@@ -36,7 +36,7 @@ export const CartCheckout: React.FC = () => {
   const smartCardBalance = currentUser.smartCardBalance ?? 0;
   const insufficientBalance = paymentMethod === "smart_card" && smartCardBalance < cartTotal;
 
-  const peakQuotaMax = 5;
+  const peakQuotaMax = 10;
   const currentSlot =
   slots.find((s) => s.id === selectedSlotId) ||
   slots.find((s) => s.isAvailable) ||
@@ -120,10 +120,10 @@ export const CartCheckout: React.FC = () => {
             <span className="material-symbols-outlined text-[18px]">
               timer
             </span>
-            <span>Lunch Rush Limit</span>
+            <span>Order Limit</span>
           </div>
           <span className="text-xs text-text-muted font-medium">
-            1:00 PM – 2:00 PM
+            Max 10 items
           </span>
         </div>
 
@@ -136,15 +136,14 @@ export const CartCheckout: React.FC = () => {
           <div className="flex flex-col flex-1">
             <div className="flex items-center justify-between">
               <span className="font-bold text-sm text-text-primary">
-                Peak Hour Basket Limits
+                Basket Limit
               </span>
               <span className="text-xs font-bold text-primary">
                 {cartCount} of {peakQuotaMax} Items
               </span>
             </div>
             <p className="text-xs text-text-muted mt-1">
-            To keep service quick, orders are limited to 5 items per lunch
-            rush.
+              To keep service quick, orders are limited to 10 items at a time.
             </p>
           </div>
         </div>
